@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { templateList, templateComponents } from "@/templates";
 import { TemplateInfo } from "@/types/resume";
@@ -12,10 +12,12 @@ import { TemplateGallery } from "@/components/resume/TemplateGallery";
 import { OnboardingTour } from "@/components/resume/OnboardingTour";
 import { ResumeImport } from "@/components/resume/ResumeImport";
 import { ColorPalettePanel } from "@/components/resume/ColorPalette";
+import { exportToPDF } from "@/lib/exportResume";
+import { toast } from "@/hooks/use-toast";
 import {
   FileText, Sparkles, MessageSquare, Target, Briefcase,
   Download, Upload, Palette, Zap, Eye, EyeOff,
-  PanelLeftClose, PanelLeftOpen, ChevronLeft
+  PanelLeftClose, PanelLeftOpen, ChevronDown
 } from "lucide-react";
 
 type RightPanel = "none" | "ats" | "jd" | "chat";
@@ -260,6 +262,11 @@ const ResumeBuilder = () => {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
+              onClick={async () => {
+                toast({ title: "Exporting PDF..." });
+                await exportToPDF("resume-preview", `${resumeData.header.name.replace(/\s+/g, '_')}_Resume.pdf`);
+                toast({ title: "PDF downloaded!" });
+              }}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium bg-primary text-primary-foreground shadow-sm hover:opacity-90 transition-opacity"
               id="export-btn"
             >
@@ -278,11 +285,11 @@ const ResumeBuilder = () => {
             style={{ transform: `scale(${previewScale})` }}
           >
             <div
+              id="resume-preview"
               className="w-[794px] min-h-[1123px] shadow-2xl rounded-sm overflow-hidden relative"
               style={{
                 boxShadow: '0 8px 40px -8px hsl(var(--foreground) / 0.12)',
                 background: 'white',
-                // Set CSS variables for template accent colors
                 ['--resume-accent' as any]: colorPalette.accent,
                 ['--resume-accent-light' as any]: colorPalette.accentLight,
                 ['--resume-accent-dark' as any]: colorPalette.accentDark,

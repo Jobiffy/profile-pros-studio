@@ -4,9 +4,9 @@ import { ResumeData } from "@/types/resume";
 export const FinanceSidebar = ({ data }: { data: ResumeData }) => (
   <div className="flex text-[11px]" style={{ color: '#1a1a1a' }}>
     {/* Sidebar */}
-    <div className="w-[30%] p-6 min-h-full font-source" style={{ background: '#0a1628', color: '#ccd6e0' }}>
+    <div className="w-[30%] p-6 min-h-full font-source" style={{ background: 'var(--resume-accent-dark, #0a1628)', color: '#ccd6e0' }}>
       <h1 className="text-lg font-bold text-white mb-1">{data.header.name}</h1>
-      <p className="text-[9px] uppercase tracking-widest mb-5" style={{ color: '#6b8aad' }}>{data.header.title}</p>
+      <p className="text-[9px] uppercase tracking-widest mb-5" style={{ color: 'var(--resume-accent-light, #6b8aad)' }}>{data.header.title}</p>
 
       <SideSection title="Contact">
         <p className="mb-0.5">{data.header.email}</p>
@@ -20,7 +20,7 @@ export const FinanceSidebar = ({ data }: { data: ResumeData }) => (
           <div key={i} className="mb-2">
             <p className="text-[9px] uppercase tracking-wider mb-1 text-white/60">{s.category}</p>
             {s.items.map((item, j) => (
-              <p key={j} className="mb-0.5 pl-2" style={{ borderLeft: '1px solid #2a4a6b' }}>{item}</p>
+              <p key={j} className="mb-0.5 pl-2" style={{ borderLeft: `1px solid var(--resume-accent, #2a4a6b)` }}>{item}</p>
             ))}
           </div>
         ))}
@@ -35,7 +35,7 @@ export const FinanceSidebar = ({ data }: { data: ResumeData }) => (
 
     {/* Main */}
     <div className="w-[70%] p-6 font-source">
-      <div className="mb-4 pb-3" style={{ borderBottom: '2px solid #0a1628' }}>
+      <div className="mb-4 pb-3" style={{ borderBottom: `2px solid var(--resume-accent-dark, #0a1628)` }}>
         <p className="text-[10.5px] leading-relaxed" style={{ color: '#444' }}>{data.summary}</p>
       </div>
 
@@ -62,13 +62,25 @@ export const FinanceSidebar = ({ data }: { data: ResumeData }) => (
           </div>
         ))}
       </MainSection>
+
+      {(data.customSections || []).map((sec, i) => (
+        <MainSection key={i} title={sec.title}>
+          {sec.items.map((item, j) => (
+            <div key={j} className="mb-2">
+              {item.subtitle && <p className="font-bold">{item.subtitle}</p>}
+              {item.description && <p className="text-[10.5px]">{item.description}</p>}
+              {item.bullets?.map((b, k) => <li key={k} className="list-disc ml-4">{b}</li>)}
+            </div>
+          ))}
+        </MainSection>
+      ))}
     </div>
   </div>
 );
 
 const SideSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <div className="mb-5">
-    <h2 className="text-[10px] uppercase tracking-[0.2em] font-bold text-white mb-2 pb-1" style={{ borderBottom: '1px solid #1e3a5f' }}>{title}</h2>
+    <h2 className="text-[10px] uppercase tracking-[0.2em] font-bold text-white mb-2 pb-1" style={{ borderBottom: `1px solid var(--resume-accent, #1e3a5f)` }}>{title}</h2>
     {children}
   </div>
 );

@@ -8,24 +8,24 @@ export const StartupModern = ({ data }: { data: ResumeData }) => (
       <p className="text-xs mt-1" style={{ color: '#666' }}>{data.header.title}</p>
       <div className="flex gap-3 mt-2">
         {[data.header.email, data.header.phone, data.header.linkedin].filter(Boolean).map((c, i) => (
-          <span key={i} className="px-2 py-0.5 rounded-full text-[9px]" style={{ background: '#eef4ff', color: '#3b63f7' }}>{c}</span>
+          <span key={i} className="px-2 py-0.5 rounded-full text-[9px]" style={{ background: 'var(--resume-accent-light, #eef4ff)', color: 'var(--resume-accent, #3b63f7)' }}>{c}</span>
         ))}
       </div>
     </div>
 
-    <div className="rounded-lg p-4 mb-5" style={{ background: 'linear-gradient(135deg, #eef4ff, #f5eeff)' }}>
+    <div className="rounded-lg p-4 mb-5" style={{ background: 'var(--resume-accent-light, #eef4ff)' }}>
       <p className="text-[10.5px] leading-relaxed">{data.summary}</p>
     </div>
 
     <SH>🚀 Experience</SH>
     {data.experience.map((exp, i) => (
-      <div key={i} className="mb-4 p-3 rounded-lg" style={{ background: i === 0 ? '#fafbff' : 'transparent' }}>
+      <div key={i} className="mb-4 p-3 rounded-lg" style={{ background: i === 0 ? 'var(--resume-accent-light, #fafbff)' : 'transparent' }}>
         <div className="flex justify-between items-center">
           <h3 className="font-bold text-xs">{exp.title} <span className="font-normal" style={{ color: '#888' }}>@ {exp.company}</span></h3>
           <span className="text-[9px] px-2 py-0.5 rounded-full" style={{ background: '#f0f0f0' }}>{exp.startDate} → {exp.endDate}</span>
         </div>
         <ul className="mt-1.5 space-y-0.5">
-          {exp.bullets.map((b, j) => <li key={j} className="pl-3" style={{ borderLeft: '2px solid #3b63f7' }}>{b}</li>)}
+          {exp.bullets.map((b, j) => <li key={j} className="pl-3" style={{ borderLeft: `2px solid var(--resume-accent, #3b63f7)` }}>{b}</li>)}
         </ul>
       </div>
     ))}
@@ -66,6 +66,19 @@ export const StartupModern = ({ data }: { data: ResumeData }) => (
         ))}
       </>
     )}
+
+    {(data.customSections || []).map((sec, i) => (
+      <div key={i}>
+        <SH>📋 {sec.title}</SH>
+        {sec.items.map((item, j) => (
+          <div key={j} className="mb-2 p-2 rounded" style={{ background: '#f8f9fa' }}>
+            {item.subtitle && <p className="font-bold text-[10.5px]">{item.subtitle}</p>}
+            {item.description && <p className="text-[10px]">{item.description}</p>}
+            {item.bullets?.map((b, k) => <p key={k} className="text-[10px] pl-2">• {b}</p>)}
+          </div>
+        ))}
+      </div>
+    ))}
   </div>
 );
 

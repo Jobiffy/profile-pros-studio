@@ -4,7 +4,7 @@ import { ResumeData } from "@/types/resume";
 export const ProfessionalClassic = ({ data }: { data: ResumeData }) => (
   <div className="flex text-[11px] font-source" style={{ color: '#1a1a1a' }}>
     {/* Sidebar */}
-    <div className="w-[32%] p-6" style={{ background: '#2d3748', color: '#e2e8f0' }}>
+    <div className="w-[32%] p-6" style={{ background: 'var(--resume-accent-dark, #2d3748)', color: '#e2e8f0' }}>
       <h1 className="text-lg font-bold text-white mb-4">{data.header.name}</h1>
 
       <PSide title="CONTACT">
@@ -22,7 +22,7 @@ export const ProfessionalClassic = ({ data }: { data: ResumeData }) => (
               <div key={j} className="flex items-center gap-2 mb-0.5">
                 <div className="flex gap-0.5">
                   {[1,2,3,4,5].map(n => (
-                    <div key={n} className="w-1.5 h-1.5 rounded-full" style={{ background: n <= 4 ? '#63b3ed' : '#4a5568' }} />
+                    <div key={n} className="w-1.5 h-1.5 rounded-full" style={{ background: n <= 4 ? 'var(--resume-accent, #63b3ed)' : '#4a5568' }} />
                   ))}
                 </div>
                 <span className="text-[10px]">{item}</span>
@@ -75,6 +75,18 @@ export const ProfessionalClassic = ({ data }: { data: ResumeData }) => (
           ))}
         </PMain>
       )}
+
+      {(data.customSections || []).map((sec, i) => (
+        <PMain key={i} title={sec.title.toUpperCase()}>
+          {sec.items.map((item, j) => (
+            <div key={j} className="mb-2">
+              {item.subtitle && <p className="font-bold">{item.subtitle}</p>}
+              {item.description && <p className="text-[10px]">{item.description}</p>}
+              {item.bullets?.map((b, k) => <p key={k} className="pl-2 text-[10px]">• {b}</p>)}
+            </div>
+          ))}
+        </PMain>
+      ))}
     </div>
   </div>
 );
@@ -88,7 +100,7 @@ const PSide = ({ title, children }: { title: string; children: React.ReactNode }
 
 const PMain = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <div className="mb-4">
-    <h2 className="text-[10px] font-bold tracking-[0.15em] uppercase mb-2 pb-1" style={{ borderBottom: '2px solid #2d3748' }}>{title}</h2>
+    <h2 className="text-[10px] font-bold tracking-[0.15em] uppercase mb-2 pb-1" style={{ borderBottom: `2px solid var(--resume-accent-dark, #2d3748)` }}>{title}</h2>
     {children}
   </div>
 );

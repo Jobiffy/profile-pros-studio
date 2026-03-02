@@ -13,15 +13,15 @@ export const ConsultingPro = ({ data }: { data: ResumeData }) => (
       </div>
     </div>
 
-    <div className="h-[2px] mb-4" style={{ background: 'linear-gradient(90deg, #0B3D2E, #1a7a5a, #0B3D2E)' }} />
+    <div className="h-[2px] mb-4" style={{ background: `linear-gradient(90deg, var(--resume-accent, #0B3D2E), var(--resume-accent-light, #1a7a5a), var(--resume-accent, #0B3D2E))` }} />
 
-    <div className="mb-4 p-3 rounded" style={{ background: '#f4f7f5' }}>
+    <div className="mb-4 p-3 rounded" style={{ background: 'var(--resume-accent-light, #f4f7f5)' }}>
       <p className="text-center italic text-[10.5px]">{data.summary}</p>
     </div>
 
     <SectionHead title="EXPERIENCE" />
     {data.experience.map((exp, i) => (
-      <div key={i} className="mb-4 pl-3" style={{ borderLeft: '2px solid #0B3D2E' }}>
+      <div key={i} className="mb-4 pl-3" style={{ borderLeft: `2px solid var(--resume-accent, #0B3D2E)` }}>
         <div className="flex justify-between">
           <div><span className="font-bold">{exp.company}</span> — <span>{exp.location}</span></div>
           <span className="text-[10px]" style={{ color: '#666' }}>{exp.startDate} – {exp.endDate}</span>
@@ -30,7 +30,7 @@ export const ConsultingPro = ({ data }: { data: ResumeData }) => (
         <ul className="space-y-0.5">
           {exp.bullets.map((b, j) => (
             <li key={j} className="flex gap-1.5">
-              <span style={{ color: '#0B3D2E' }}>▸</span>
+              <span style={{ color: 'var(--resume-accent, #0B3D2E)' }}>▸</span>
               <span>{b}</span>
             </li>
           ))}
@@ -65,6 +65,19 @@ export const ConsultingPro = ({ data }: { data: ResumeData }) => (
         )}
       </div>
     </div>
+
+    {(data.customSections || []).map((sec, i) => (
+      <div key={i}>
+        <SectionHead title={sec.title.toUpperCase()} />
+        {sec.items.map((item, j) => (
+          <div key={j} className="mb-2 pl-3" style={{ borderLeft: `2px solid var(--resume-accent, #0B3D2E)` }}>
+            {item.subtitle && <p className="font-bold">{item.subtitle}</p>}
+            {item.description && <p className="text-[10.5px]">{item.description}</p>}
+            {item.bullets?.map((b, k) => <li key={k} className="flex gap-1.5"><span style={{ color: 'var(--resume-accent, #0B3D2E)' }}>▸</span><span>{b}</span></li>)}
+          </div>
+        ))}
+      </div>
+    ))}
   </div>
 );
 

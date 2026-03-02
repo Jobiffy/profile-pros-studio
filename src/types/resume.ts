@@ -44,6 +44,14 @@ export interface ResumeData {
     date: string;
     bullets: string[];
   }[];
+  customSections?: {
+    title: string;
+    items: {
+      subtitle?: string;
+      description?: string;
+      bullets?: string[];
+    }[];
+  }[];
 }
 
 export interface TemplateInfo {

@@ -5,7 +5,7 @@ export const MinimalistType = ({ data }: { data: ResumeData }) => (
   <div className="p-12 text-[11px] font-light" style={{ color: '#333', fontFamily: "'Inter', sans-serif" }}>
     <div className="mb-10">
       <h1 className="text-3xl font-extralight tracking-tight">{data.header.name}</h1>
-      <div className="w-8 h-px mt-3 mb-2" style={{ background: '#333' }} />
+      <div className="w-8 h-px mt-3 mb-2" style={{ background: 'var(--resume-accent, #333)' }} />
       <div className="flex gap-6 text-[10px]" style={{ color: '#aaa' }}>
         <span>{data.header.email}</span>
         <span>{data.header.phone}</span>
@@ -45,9 +45,24 @@ export const MinimalistType = ({ data }: { data: ResumeData }) => (
     <p style={{ color: '#777' }}>
       {data.skills.flatMap(s => s.items).join("  ·  ")}
     </p>
+
+    {(data.customSections || []).map((sec, i) => (
+      <div key={i}>
+        <MinH>{sec.title}</MinH>
+        {sec.items.map((item, j) => (
+          <div key={j} className="mb-3 grid grid-cols-[120px_1fr] gap-4">
+            <span className="text-[10px]" style={{ color: '#bbb' }}>{item.subtitle || ''}</span>
+            <div>
+              {item.description && <p className="font-medium">{item.description}</p>}
+              {item.bullets?.map((b, k) => <p key={k} className="mb-0.5" style={{ color: '#555' }}>{b}</p>)}
+            </div>
+          </div>
+        ))}
+      </div>
+    ))}
   </div>
 );
 
 const MinH = ({ children }: { children: React.ReactNode }) => (
-  <h2 className="text-[9px] uppercase tracking-[0.3em] mb-4 mt-8" style={{ color: '#bbb' }}>{children}</h2>
+  <h2 className="text-[9px] uppercase tracking-[0.3em] mb-4 mt-8" style={{ color: 'var(--resume-accent, #bbb)' }}>{children}</h2>
 );

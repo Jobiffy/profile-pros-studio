@@ -4,7 +4,7 @@ import { ResumeData } from "@/types/resume";
 export const StrategyMinimal = ({ data }: { data: ResumeData }) => (
   <div className="font-dm p-8 text-[11px]" style={{ color: '#2d2d2d' }}>
     <div className="flex items-end gap-4 mb-6">
-      <div className="w-1.5 h-16 rounded-full" style={{ background: '#C4975C' }} />
+      <div className="w-1.5 h-16 rounded-full" style={{ background: 'var(--resume-accent, #C4975C)' }} />
       <div>
         <h1 className="text-2xl font-bold">{data.header.name}</h1>
         <p className="text-[10px] tracking-wider uppercase mt-0.5" style={{ color: '#888' }}>{data.header.title}</p>
@@ -25,11 +25,11 @@ export const StrategyMinimal = ({ data }: { data: ResumeData }) => (
         <div key={i} className="mb-4">
           <div className="flex justify-between items-center">
             <h3 className="font-bold text-xs">{exp.title}</h3>
-            <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: '#f5f0e8', color: '#C4975C' }}>{exp.startDate} – {exp.endDate}</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'var(--resume-accent-light, #f5f0e8)', color: 'var(--resume-accent, #C4975C)' }}>{exp.startDate} – {exp.endDate}</span>
           </div>
           <p className="text-[10px] mb-1.5" style={{ color: '#888' }}>{exp.company} · {exp.location}</p>
           <ul className="space-y-0.5">
-            {exp.bullets.map((b, j) => <li key={j} className="pl-3" style={{ borderLeft: '1px solid #C4975C' }}>{b}</li>)}
+            {exp.bullets.map((b, j) => <li key={j} className="pl-3" style={{ borderLeft: `1px solid var(--resume-accent, #C4975C)` }}>{b}</li>)}
           </ul>
         </div>
       ))}
@@ -45,7 +45,7 @@ export const StrategyMinimal = ({ data }: { data: ResumeData }) => (
       <Heading>Skills</Heading>
       <div className="flex flex-wrap gap-1.5">
         {data.skills.flatMap(s => s.items).map((item, i) => (
-          <span key={i} className="px-2 py-0.5 rounded-full text-[10px]" style={{ background: '#f5f0e8', color: '#8B6914' }}>{item}</span>
+          <span key={i} className="px-2 py-0.5 rounded-full text-[10px]" style={{ background: 'var(--resume-accent-light, #f5f0e8)', color: 'var(--resume-accent-dark, #8B6914)' }}>{item}</span>
         ))}
       </div>
 
@@ -59,13 +59,26 @@ export const StrategyMinimal = ({ data }: { data: ResumeData }) => (
           </div>
         </>
       )}
+
+      {(data.customSections || []).map((sec, i) => (
+        <div key={i}>
+          <Heading>{sec.title}</Heading>
+          {sec.items.map((item, j) => (
+            <div key={j} className="mb-2">
+              {item.subtitle && <p className="font-semibold">{item.subtitle}</p>}
+              {item.description && <p className="text-[10.5px]" style={{ color: '#555' }}>{item.description}</p>}
+              {item.bullets?.map((b, k) => <li key={k} className="pl-3" style={{ borderLeft: `1px solid var(--resume-accent, #C4975C)` }}>{b}</li>)}
+            </div>
+          ))}
+        </div>
+      ))}
     </div>
   </div>
 );
 
 const Heading = ({ children }: { children: React.ReactNode }) => (
   <h2 className="text-xs font-bold uppercase tracking-[0.15em] mb-2 flex items-center gap-2">
-    <span className="w-3 h-0.5 rounded" style={{ background: '#C4975C' }} />
+    <span className="w-3 h-0.5 rounded" style={{ background: 'var(--resume-accent, #C4975C)' }} />
     {children}
   </h2>
 );

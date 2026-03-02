@@ -5,7 +5,7 @@ export const DeveloperCode = ({ data }: { data: ResumeData }) => (
   <div className="font-mono-code p-7 text-[10.5px]" style={{ color: '#e0e0e0', background: '#1e1e2e' }}>
     <div className="mb-5">
       <p style={{ color: '#6c7086' }}>{'// resume.ts'}</p>
-      <h1 className="text-xl font-bold" style={{ color: '#89b4fa' }}>
+      <h1 className="text-xl font-bold" style={{ color: 'var(--resume-accent, #89b4fa)' }}>
         <span style={{ color: '#cba6f7' }}>const</span> {data.header.name.replace(' ', '_')} = {'{'} 
       </h1>
       <div className="pl-4 text-[10px]" style={{ color: '#a6adc8' }}>
@@ -13,7 +13,7 @@ export const DeveloperCode = ({ data }: { data: ResumeData }) => (
         <p>phone: "{data.header.phone}",</p>
         {data.header.linkedin && <p>linkedin: "{data.header.linkedin}",</p>}
       </div>
-      <p style={{ color: '#89b4fa' }}>{'}'}</p>
+      <p style={{ color: 'var(--resume-accent, #89b4fa)' }}>{'}'}</p>
     </div>
 
     <Comment text="Summary" />
@@ -37,7 +37,7 @@ export const DeveloperCode = ({ data }: { data: ResumeData }) => (
     <Comment text="Skills" />
     <div className="pl-4 flex flex-wrap gap-1.5 mt-1">
       {data.skills.flatMap(s => s.items).map((item, i) => (
-        <span key={i} className="px-1.5 py-0.5 rounded text-[9px]" style={{ background: '#313244', color: '#89b4fa' }}>{item}</span>
+        <span key={i} className="px-1.5 py-0.5 rounded text-[9px]" style={{ background: '#313244', color: 'var(--resume-accent, #89b4fa)' }}>{item}</span>
       ))}
     </div>
 
@@ -52,6 +52,19 @@ export const DeveloperCode = ({ data }: { data: ResumeData }) => (
         ))}
       </>
     )}
+
+    {(data.customSections || []).map((sec, i) => (
+      <div key={i}>
+        <Comment text={sec.title} />
+        {sec.items.map((item, j) => (
+          <div key={j} className="pl-4 mb-2">
+            {item.subtitle && <p style={{ color: '#f9e2af' }}>{item.subtitle}</p>}
+            {item.description && <p style={{ color: '#bac2de' }}>{item.description}</p>}
+            {item.bullets?.map((b, k) => <p key={k} className="pl-2" style={{ color: '#bac2de' }}>→ {b}</p>)}
+          </div>
+        ))}
+      </div>
+    ))}
   </div>
 );
 
