@@ -1,147 +1,250 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { templateList, templateComponents } from "@/templates";
-import { sampleResume } from "@/data/sampleResume";
 import { TemplateInfo } from "@/types/resume";
-import { FileText, Download, Upload, ChevronRight, Sparkles, Target, MessageSquare, BarChart3, Briefcase, GraduationCap, FolderOpen, Award, Users, Wrench, User } from "lucide-react";
+import { useResumeData } from "@/hooks/useResumeData";
+import { useResumeAI } from "@/hooks/useResumeAI";
+import { ResumeEditPanel } from "@/components/resume/ResumeEditPanel";
+import { ATSScorePanel } from "@/components/resume/ATSScorePanel";
+import { JDMatchPanel } from "@/components/resume/JDMatchPanel";
+import { AIChatPanel } from "@/components/resume/AIChatPanel";
+import { TemplateGallery } from "@/components/resume/TemplateGallery";
+import { OnboardingTour } from "@/components/resume/OnboardingTour";
+import {
+  FileText, Sparkles, MessageSquare, Target, Briefcase,
+  Download, Upload, PanelLeftClose, PanelLeftOpen, Zap
+} from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-const sidebarSections = [
-  { icon: User, label: "Header" },
-  { icon: FileText, label: "Summary" },
-  { icon: Briefcase, label: "Work Experience" },
-  { icon: GraduationCap, label: "Education" },
-  { icon: FolderOpen, label: "Projects" },
-  { icon: Award, label: "Certifications" },
-  { icon: Users, label: "Leadership Experience" },
-  { icon: Wrench, label: "Technical Skills" },
+type RightPanel = "none" | "ats" | "jd" | "chat";
+type LeftPanel = "edit" | "templates";
+
+const leftNavItems = [
+  { icon: FileText, label: "Edit", panel: "edit" as LeftPanel },
+  { icon: Sparkles, label: "Templates", panel: "templates" as LeftPanel },
 ];
 
-const iconNav = [
-  { icon: FileText, label: "Resume Content" },
-  { icon: Sparkles, label: "Customize" },
-  { icon: MessageSquare, label: "AI Chat" },
-  { icon: Target, label: "ATS Score" },
-  { icon: Briefcase, label: "Job Desc" },
-  { icon: BarChart3, label: "Feedback" },
+const rightNavItems = [
+  { icon: Target, label: "ATS", panel: "ats" as RightPanel },
+  { icon: Briefcase, label: "JD Match", panel: "jd" as RightPanel },
+  { icon: MessageSquare, label: "AI Chat", panel: "chat" as RightPanel },
 ];
-
-type CategoryFilter = "all" | "mba" | "tech" | "generic";
 
 const ResumeBuilder = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateInfo>(templateList[0]);
-  const [activeNav, setActiveNav] = useState(0);
-  const [showTemplates, setShowTemplates] = useState(true);
-  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
+  const [leftPanel, setLeftPanel] = useState<LeftPanel>("edit");
+  const [rightPanel, setRightPanel] = useState<RightPanel>("none");
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [previewScale, setPreviewScale] = useState(0.7);
+
+  const { resumeData, updateHeader, updateSummary, updateExperience, updateEducation, updateField } = useResumeData();
+  const {
+    atsResult, atsLoading, analyzeATS,
+    jdResult, jdLoading, matchJD,
+    chatMessages, chatLoading, sendChatMessage,
+  } = useResumeAI(resumeData);
 
   const TemplateComponent = templateComponents[selectedTemplate.id];
-  const filtered = categoryFilter === "all" ? templateList : templateList.filter(t => t.category === categoryFilter);
+
+  useEffect(() => {
+    const visited = localStorage.getItem("jobiffy-onboarded");
+    if (!visited) {
+      setShowOnboarding(true);
+    }
+  }, []);
+
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
+    localStorage.setItem("jobiffy-onboarded", "true");
+  };
+
+  const handleOnboardingNavigate = (panel: string) => {
+    if (panel === "edit" || panel === "templates") setLeftPanel(panel as LeftPanel);
+    else if (panel === "ats" || panel === "jd" || panel === "chat") setRightPanel(panel as RightPanel);
+  };
+
+  const toggleRightPanel = (panel: RightPanel) => {
+    setRightPanel(prev => prev === panel ? "none" : panel);
+  };
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: 'hsl(var(--background))' }}>
-      {/* Icon Nav */}
-      <div className="w-16 shrink-0 flex flex-col items-center py-4 gap-1" style={{ background: 'hsl(var(--sidebar-bg))', borderRight: '1px solid hsl(var(--sidebar-border))' }}>
-        {iconNav.map((item, i) => (
-          <button
-            key={i}
-            onClick={() => { setActiveNav(i); setShowTemplates(i === 1); }}
-            className="w-12 h-12 rounded-lg flex flex-col items-center justify-center gap-0.5 transition-colors text-[9px]"
+    <div className="flex h-screen overflow-hidden bg-background">
+      {/* Onboarding Tour */}
+      {showOnboarding && (
+        <OnboardingTour onComplete={handleOnboardingComplete} onNavigate={handleOnboardingNavigate} />
+      )}
+
+      {/* Left Navigation Rail */}
+      <motion.div
+        initial={{ x: -64 }}
+        animate={{ x: 0 }}
+        transition={{ type: "spring", damping: 20 }}
+        className="w-14 shrink-0 flex flex-col items-center py-3 gap-1 bg-sidebar border-r border-sidebar-border"
+      >
+        {/* Logo */}
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.2, type: "spring" }}
+          className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center mb-3"
+        >
+          <span className="text-primary-foreground font-bold text-sm">J</span>
+        </motion.div>
+
+        {leftNavItems.map((item, i) => (
+          <motion.button
+            key={item.panel}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 + i * 0.05 }}
+            onClick={() => setLeftPanel(item.panel)}
+            className="w-10 h-10 rounded-lg flex flex-col items-center justify-center gap-0.5 transition-all text-[9px]"
             style={{
-              background: activeNav === i ? 'hsl(var(--sidebar-active))' : 'transparent',
-              color: activeNav === i ? 'hsl(var(--sidebar-active-fg))' : 'hsl(var(--sidebar-icon))',
+              background: leftPanel === item.panel ? 'hsl(var(--sidebar-primary))' : 'transparent',
+              color: leftPanel === item.panel ? 'hsl(var(--sidebar-primary-foreground))' : 'hsl(var(--sidebar-foreground) / 0.6)',
             }}
           >
-            <item.icon size={18} />
-            <span className="leading-none">{item.label.split(' ')[0]}</span>
-          </button>
+            <item.icon size={16} />
+            <span className="leading-none">{item.label}</span>
+          </motion.button>
         ))}
-      </div>
 
-      {/* Section Panel */}
-      <div className="w-64 shrink-0 flex flex-col" style={{ background: 'hsl(var(--sidebar-bg))', borderRight: '1px solid hsl(var(--sidebar-border))' }}>
-        {showTemplates ? (
-          <div className="flex-1 overflow-hidden flex flex-col">
-            <div className="p-4 pb-2">
-              <h2 className="text-sm font-semibold" style={{ color: 'hsl(var(--sidebar-fg))' }}>Templates</h2>
-              <div className="flex gap-1 mt-2">
-                {(["all", "mba", "tech", "generic"] as CategoryFilter[]).map(cat => (
-                  <button
-                    key={cat}
-                    onClick={() => setCategoryFilter(cat)}
-                    className="px-2 py-1 rounded text-[10px] font-medium uppercase transition-colors"
-                    style={{
-                      background: categoryFilter === cat ? 'hsl(var(--sidebar-active))' : 'transparent',
-                      color: categoryFilter === cat ? 'hsl(var(--sidebar-active-fg))' : 'hsl(var(--sidebar-icon))',
-                    }}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <ScrollArea className="flex-1 px-3 pb-3">
-              <div className="space-y-2">
-                {filtered.map(t => (
-                  <button
-                    key={t.id}
-                    onClick={() => setSelectedTemplate(t)}
-                    className="w-full text-left p-3 rounded-lg transition-all"
-                    style={{
-                      background: selectedTemplate.id === t.id ? 'hsl(var(--sidebar-hover))' : 'transparent',
-                      border: selectedTemplate.id === t.id ? '1px solid hsl(var(--sidebar-active))' : '1px solid transparent',
-                    }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-8 rounded-sm shrink-0" style={{ background: t.preview }} />
-                      <div>
-                        <p className="text-xs font-medium" style={{ color: 'hsl(var(--sidebar-fg))' }}>{t.name}</p>
-                        <p className="text-[9px] mt-0.5" style={{ color: 'hsl(var(--sidebar-icon))' }}>{t.description}</p>
-                        <span className="text-[8px] uppercase tracking-wider px-1.5 py-0.5 rounded mt-1 inline-block" style={{ background: 'hsl(var(--sidebar-hover))', color: 'hsl(var(--sidebar-icon))' }}>{t.category}</span>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </ScrollArea>
-          </div>
-        ) : (
-          <ScrollArea className="flex-1">
-            <div className="p-2">
-              {sidebarSections.map((section, i) => (
-                <button key={i} className="w-full flex items-center justify-between p-3 rounded-lg transition-colors hover:bg-[hsl(var(--sidebar-hover))]" style={{ color: 'hsl(var(--sidebar-fg))' }}>
-                  <div className="flex items-center gap-3">
-                    <section.icon size={16} style={{ color: 'hsl(var(--sidebar-icon))' }} />
-                    <span className="text-sm">{section.label}</span>
-                  </div>
-                  <ChevronRight size={14} style={{ color: 'hsl(var(--sidebar-icon))' }} />
-                </button>
-              ))}
-            </div>
-          </ScrollArea>
-        )}
-      </div>
+        <div className="flex-1" />
+
+        {rightNavItems.map((item, i) => (
+          <motion.button
+            key={item.panel}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4 + i * 0.05 }}
+            onClick={() => toggleRightPanel(item.panel)}
+            className="w-10 h-10 rounded-lg flex flex-col items-center justify-center gap-0.5 transition-all text-[9px] relative"
+            style={{
+              background: rightPanel === item.panel ? 'hsl(var(--sidebar-primary))' : 'transparent',
+              color: rightPanel === item.panel ? 'hsl(var(--sidebar-primary-foreground))' : 'hsl(var(--sidebar-foreground) / 0.6)',
+            }}
+          >
+            <item.icon size={16} />
+            <span className="leading-none">{item.label}</span>
+            {item.panel === "ats" && atsResult && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[7px] font-bold flex items-center justify-center"
+              >
+                {atsResult.overallScore}
+              </motion.div>
+            )}
+          </motion.button>
+        ))}
+      </motion.div>
+
+      {/* Left Panel */}
+      <motion.div
+        initial={{ width: 0, opacity: 0 }}
+        animate={{ width: 300, opacity: 1 }}
+        transition={{ type: "spring", damping: 25 }}
+        className="shrink-0 flex flex-col bg-card border-r border-border overflow-hidden"
+      >
+        <AnimatePresence mode="wait">
+          {leftPanel === "edit" ? (
+            <motion.div key="edit" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex-1 overflow-hidden">
+              <ResumeEditPanel
+                data={resumeData}
+                onUpdateHeader={updateHeader}
+                onUpdateSummary={updateSummary}
+                onUpdateExperience={updateExperience}
+                onUpdateEducation={updateEducation}
+                onUpdateField={updateField}
+              />
+            </motion.div>
+          ) : (
+            <motion.div key="templates" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex-1 overflow-hidden">
+              <TemplateGallery selected={selectedTemplate} onSelect={setSelectedTemplate} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar */}
-        <div className="h-14 shrink-0 flex items-center justify-between px-6" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-          <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-colors" style={{ background: 'hsl(var(--muted))', color: 'hsl(var(--foreground))' }}>
-            <Upload size={14} /> Import Resume
-          </button>
-          <div className="flex items-center gap-2">
-            <span className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Template: {selectedTemplate.name}</span>
-            <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors" style={{ background: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' }}>
-              <Download size={14} /> Export PDF
-            </button>
+        <motion.div
+          initial={{ y: -56 }}
+          animate={{ y: 0 }}
+          transition={{ type: "spring", damping: 20 }}
+          className="h-14 shrink-0 flex items-center justify-between px-5 border-b border-border bg-card/80 backdrop-blur-sm"
+        >
+          <div className="flex items-center gap-3">
+            <motion.h1 initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="text-base font-semibold text-foreground">
+              Job<span className="text-primary">iffy</span> Resume Builder
+            </motion.h1>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium flex items-center gap-1">
+              <Zap size={10} /> AI Powered
+            </span>
           </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground hidden sm:block">{selectedTemplate.name}</span>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground shadow-sm hover:opacity-90 transition-opacity"
+              id="export-btn"
+            >
+              <Download size={14} /> Export PDF
+            </motion.button>
+          </div>
+        </motion.div>
+
+        {/* Resume Preview Area */}
+        <div className="flex-1 overflow-auto flex justify-center items-start py-6 px-4 bg-muted/50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 30 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ delay: 0.4, type: "spring", damping: 20 }}
+            className="origin-top"
+            style={{ transform: `scale(${previewScale})` }}
+          >
+            <div className="w-[794px] min-h-[1123px] shadow-2xl rounded-sm overflow-hidden bg-card" style={{ boxShadow: '0 8px 40px -8px hsl(var(--foreground) / 0.15)' }}>
+              <TemplateComponent data={resumeData} />
+            </div>
+          </motion.div>
         </div>
 
-        {/* Resume Preview */}
-        <div className="flex-1 overflow-auto p-8 flex justify-center" style={{ background: 'hsl(var(--muted))' }}>
-          <div className="w-[794px] min-h-[1123px] shadow-xl" style={{ background: 'hsl(var(--resume-bg))', boxShadow: 'var(--resume-shadow)' }}>
-            <TemplateComponent data={sampleResume} />
-          </div>
+        {/* Zoom Controls */}
+        <div className="h-10 flex items-center justify-center gap-2 border-t border-border bg-card/80">
+          <button onClick={() => setPreviewScale(s => Math.max(0.3, s - 0.1))} className="w-7 h-7 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex items-center justify-center">−</button>
+          <span className="text-xs text-muted-foreground w-12 text-center">{Math.round(previewScale * 100)}%</span>
+          <button onClick={() => setPreviewScale(s => Math.min(1.2, s + 0.1))} className="w-7 h-7 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex items-center justify-center">+</button>
         </div>
       </div>
+
+      {/* Right Panel */}
+      <AnimatePresence>
+        {rightPanel !== "none" && (
+          <motion.div
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 340, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ type: "spring", damping: 25 }}
+            className="shrink-0 flex flex-col bg-card border-l border-border overflow-hidden"
+          >
+            {rightPanel === "ats" && (
+              <ATSScorePanel result={atsResult} loading={atsLoading} onAnalyze={analyzeATS} />
+            )}
+            {rightPanel === "jd" && (
+              <JDMatchPanel result={jdResult} loading={jdLoading} onMatch={matchJD} />
+            )}
+            {rightPanel === "chat" && (
+              <AIChatPanel
+                messages={chatMessages}
+                loading={chatLoading}
+                onSend={(msg) => sendChatMessage(msg, updateField)}
+              />
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
