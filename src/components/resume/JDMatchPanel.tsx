@@ -3,7 +3,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { JDMatchResult } from "@/hooks/useResumeAI";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
-import { Briefcase, Loader2, CheckCircle2, XCircle, ArrowRight } from "lucide-react";
+import { Briefcase, Loader2, CheckCircle2, XCircle, ArrowRight, Link2, FileText, Globe, AlertCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 interface Props {
   result: JDMatchResult | null;
@@ -29,36 +31,122 @@ function MatchRing({ score }: { score: number }) {
   );
 }
 
+type InputMode = "paste" | "url";
+
 export function JDMatchPanel({ result, loading, onMatch }: Props) {
   const [jd, setJd] = useState("");
+  const [jobUrl, setJobUrl] = useState("");
+  const [inputMode, setInputMode] = useState<InputMode>("paste");
+  const [fetchingUrl, setFetchingUrl] = useState(false);
+
+  const handleFetchUrl = async () => {
+    if (!jobUrl.trim()) return;
+    setFetchingUrl(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("resume-ai", {
+        body: { action: "fetch-jd", url: jobUrl.trim() },
+      });
+      if (error) throw error;
+      if (data?.jobDescription) {
+        setJd(data.jobDescription);
+        setInputMode("paste");
+        toast({ title: "Job description fetched!", description: "Review and click Analyze Match." });
+      } else {
+        throw new Error("Could not extract job description from the URL");
+      }
+    } catch (e: any) {
+      toast({ title: "Failed to fetch JD", description: e.message || "Try pasting the JD manually instead.", variant: "destructive" });
+    } finally {
+      setFetchingUrl(false);
+    }
+  };
 
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b border-border/50">
-        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <Briefcase size={16} className="text-primary" /> Job Description Matcher
-        </h3>
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+            <Briefcase size={16} className="text-blue-500" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">JD Matcher</h3>
+            <p className="text-[10px] text-muted-foreground">See how well your resume matches a job</p>
+          </div>
+        </div>
       </div>
 
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-4">
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-muted-foreground">Paste Job Description</label>
-            <Textarea
-              value={jd}
-              onChange={e => setJd(e.target.value)}
-              rows={6}
-              placeholder="Paste the job description here to see how well your resume matches..."
-              className="text-sm bg-background border-border/60 focus:border-primary resize-none"
-            />
+          {/* Input Mode Toggle */}
+          <div className="flex gap-1 p-1 rounded-lg bg-muted/50 border border-border/40">
             <button
-              onClick={() => jd.trim() && onMatch(jd)}
-              disabled={loading || !jd.trim()}
-              className="w-full py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+              onClick={() => setInputMode("paste")}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-xs font-medium transition-all ${
+                inputMode === "paste" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              }`}
             >
-              {loading ? <><Loader2 size={14} className="animate-spin" /> Matching...</> : <><ArrowRight size={14} /> Analyze Match</>}
+              <FileText size={12} /> Paste JD
+            </button>
+            <button
+              onClick={() => setInputMode("url")}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-xs font-medium transition-all ${
+                inputMode === "url" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Globe size={12} /> Job URL
             </button>
           </div>
+
+          <AnimatePresence mode="wait">
+            {inputMode === "url" ? (
+              <motion.div key="url" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">Paste Job Posting URL</label>
+                <div className="flex gap-2">
+                  <div className="flex-1 relative">
+                    <Link2 size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <input
+                      value={jobUrl}
+                      onChange={e => setJobUrl(e.target.value)}
+                      placeholder="https://linkedin.com/jobs/..."
+                      className="w-full h-9 pl-8 pr-3 rounded-lg text-sm bg-background border border-border/60 focus:border-primary focus:outline-none text-foreground placeholder:text-muted-foreground"
+                    />
+                  </div>
+                </div>
+                <button
+                  onClick={handleFetchUrl}
+                  disabled={fetchingUrl || !jobUrl.trim()}
+                  className="w-full py-2.5 rounded-lg text-sm font-medium bg-blue-500 text-white hover:bg-blue-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {fetchingUrl ? <><Loader2 size={14} className="animate-spin" /> Fetching JD...</> : <><Globe size={14} /> Fetch Job Description</>}
+                </button>
+                <div className="flex items-start gap-2 p-2.5 rounded-lg bg-muted/50 border border-border/30">
+                  <AlertCircle size={14} className="text-muted-foreground mt-0.5 shrink-0" />
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    We'll try to extract the job description from the URL. Works best with LinkedIn, Indeed, Glassdoor, and most job boards.
+                  </p>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div key="paste" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">Paste Job Description</label>
+                <Textarea
+                  value={jd}
+                  onChange={e => setJd(e.target.value)}
+                  rows={6}
+                  placeholder="Paste the job description here to see how well your resume matches..."
+                  className="text-sm bg-background border-border/60 focus:border-primary resize-none"
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <button
+            onClick={() => jd.trim() && onMatch(jd)}
+            disabled={loading || !jd.trim()}
+            className="w-full py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {loading ? <><Loader2 size={14} className="animate-spin" /> Matching...</> : <><ArrowRight size={14} /> Analyze Match</>}
+          </button>
 
           {result && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
@@ -69,7 +157,7 @@ export function JDMatchPanel({ result, loading, onMatch }: Props) {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <h4 className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1"><CheckCircle2 size={12} className="text-primary" /> Matched Keywords</h4>
+                  <h4 className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1"><CheckCircle2 size={12} className="text-primary" /> Matched</h4>
                   <div className="flex flex-wrap gap-1">
                     {result.matchedKeywords.map((k, i) => (
                       <motion.span key={i} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }} className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary border border-primary/20">{k}</motion.span>
@@ -77,7 +165,7 @@ export function JDMatchPanel({ result, loading, onMatch }: Props) {
                   </div>
                 </div>
                 <div>
-                  <h4 className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1"><XCircle size={12} className="text-destructive" /> Missing Keywords</h4>
+                  <h4 className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1"><XCircle size={12} className="text-destructive" /> Missing</h4>
                   <div className="flex flex-wrap gap-1">
                     {result.missingKeywords.map((k, i) => (
                       <motion.span key={i} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }} className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-destructive/10 text-destructive border border-destructive/20">{k}</motion.span>

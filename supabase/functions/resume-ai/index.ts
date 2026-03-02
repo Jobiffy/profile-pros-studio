@@ -10,7 +10,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { action, resumeData, jobDescription, messages, rawText } = await req.json();
+    const { action, resumeData, jobDescription, messages, rawText, url } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -22,6 +22,51 @@ serve(async (req) => {
     let useTools = false;
     let tools: any[] = [];
     let toolChoice: any = undefined;
+
+    if (action === "fetch-jd") {
+      // Fetch job description from a URL
+      if (!url) throw new Error("URL is required");
+
+      // Fetch the page content
+      const pageResp = await fetch(url, {
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; Jobiffy/1.0)" },
+      });
+      if (!pageResp.ok) throw new Error(`Failed to fetch URL: ${pageResp.status}`);
+      const html = await pageResp.text();
+
+      // Strip HTML tags to get text
+      const textContent = html
+        .replace(/<script[\s\S]*?<\/script>/gi, "")
+        .replace(/<style[\s\S]*?<\/style>/gi, "")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 15000);
+
+      // Use AI to extract the job description
+      const extractResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash-lite",
+          messages: [
+            { role: "system", content: "Extract the job description from the following webpage text. Return ONLY the job description text, including job title, requirements, responsibilities, and qualifications. Remove any navigation, footer, or unrelated content." },
+            { role: "user", content: textContent },
+          ],
+        }),
+      });
+
+      if (!extractResp.ok) throw new Error("Failed to extract job description");
+      const extractData = await extractResp.json();
+      const jobDescription = extractData.choices?.[0]?.message?.content || "";
+
+      return new Response(JSON.stringify({ jobDescription }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (action === "parse-resume") {
       // Parse raw text into structured resume data
