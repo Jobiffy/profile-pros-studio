@@ -28,6 +28,7 @@ export function useResumeAI(resumeData: ResumeData) {
   const [jdResult, setJdResult] = useState<JDMatchResult | null>(null);
   const [atsLoading, setAtsLoading] = useState(false);
   const [jdLoading, setJdLoading] = useState(false);
+  const [tailorLoading, setTailorLoading] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
 
@@ -58,6 +59,23 @@ export function useResumeAI(resumeData: ResumeData) {
       toast({ title: "JD Match Failed", description: e.message, variant: "destructive" });
     } finally {
       setJdLoading(false);
+    }
+  }, [resumeData]);
+
+  const tailorResume = useCallback(async (jobDescription: string): Promise<ResumeData | null> => {
+    setTailorLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("resume-ai", {
+        body: { action: "tailor-resume", resumeData, jobDescription },
+      });
+      if (error) throw error;
+      toast({ title: "Resume Tailored!", description: "Your resume has been optimized for this job. Review the changes." });
+      return data as ResumeData;
+    } catch (e: any) {
+      toast({ title: "Tailoring Failed", description: e.message, variant: "destructive" });
+      return null;
+    } finally {
+      setTailorLoading(false);
     }
   }, [resumeData]);
 
@@ -151,6 +169,7 @@ export function useResumeAI(resumeData: ResumeData) {
   return {
     atsResult, atsLoading, analyzeATS,
     jdResult, jdLoading, matchJD,
+    tailorLoading, tailorResume,
     chatMessages, chatLoading, sendChatMessage,
     setChatMessages,
   };
