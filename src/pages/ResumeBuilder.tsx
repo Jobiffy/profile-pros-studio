@@ -298,6 +298,35 @@ const ResumeBuilder = () => {
           </div>
 
           <div className="flex items-center gap-1.5">
+            {/* AI Tools */}
+            {[
+              { icon: Target, label: "ATS Score", panel: "ats" as RightPanel },
+              { icon: Briefcase, label: "JD Match", panel: "jd" as RightPanel },
+              { icon: MessageSquare, label: "AI Chat", panel: "chat" as RightPanel },
+            ].map(item => (
+              <motion.button
+                key={item.panel}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => toggleRightPanel(item.panel)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                  rightPanel === item.panel
+                    ? "bg-primary/10 text-primary border border-primary/20"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                }`}
+              >
+                <item.icon size={13} />
+                <span className="hidden md:inline">{item.label}</span>
+                {item.panel === "ats" && atsResult && (
+                  <span className="w-5 h-5 rounded-full bg-primary/15 text-primary text-[9px] font-bold flex items-center justify-center">
+                    {atsResult.overallScore}
+                  </span>
+                )}
+              </motion.button>
+            ))}
+
+            <div className="w-px h-5 bg-border mx-1" />
+
             {/* Theme Toggle */}
             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={toggleTheme}
               className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
@@ -396,33 +425,7 @@ const ResumeBuilder = () => {
             <button onClick={() => setPreviewScale(s => Math.min(1.2, s + 0.1))} className="w-6 h-6 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex items-center justify-center">+</button>
           </div>
 
-          <div className="flex items-center gap-1">
-            {[
-              { icon: Target, label: "ATS Score", panel: "ats" as RightPanel },
-              { icon: Briefcase, label: "JD Match", panel: "jd" as RightPanel },
-              { icon: MessageSquare, label: "AI Chat", panel: "chat" as RightPanel },
-            ].map(item => (
-              <motion.button
-                key={item.panel}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => toggleRightPanel(item.panel)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  rightPanel === item.panel
-                    ? "bg-primary/10 text-primary border border-primary/20"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                }`}
-              >
-                <item.icon size={13} />
-                <span className="hidden md:inline">{item.label}</span>
-                {item.panel === "ats" && atsResult && (
-                  <span className="w-5 h-5 rounded-full bg-primary/15 text-primary text-[9px] font-bold flex items-center justify-center">
-                    {atsResult.overallScore}
-                  </span>
-                )}
-              </motion.button>
-            ))}
-          </div>
+          <div />
         </div>
       </div>
 
