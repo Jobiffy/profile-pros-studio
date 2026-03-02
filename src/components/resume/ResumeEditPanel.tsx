@@ -4,7 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { User, Briefcase, GraduationCap, Wrench, FolderOpen, Award, Users, FileText, Plus, Trash2, ChevronDown, ChevronRight } from "lucide-react";
+import {
+  User, Briefcase, GraduationCap, Wrench, FolderOpen, Award, Users,
+  FileText, Plus, Trash2, ChevronDown, X
+} from "lucide-react";
 import { useState } from "react";
 
 interface Props {
@@ -14,6 +17,20 @@ interface Props {
   onUpdateExperience: (index: number, field: string, value: any) => void;
   onUpdateEducation: (index: number, field: string, value: any) => void;
   onUpdateField: (field: string, value: any) => void;
+  onAddExperience: () => void;
+  onRemoveExperience: (i: number) => void;
+  onAddEducation: () => void;
+  onRemoveEducation: (i: number) => void;
+  onAddSkillCategory: () => void;
+  onRemoveSkillCategory: (i: number) => void;
+  onAddProject: () => void;
+  onRemoveProject: (i: number) => void;
+  onAddCertification: () => void;
+  onRemoveCertification: (i: number) => void;
+  onAddLeadership: () => void;
+  onRemoveLeadership: (i: number) => void;
+  onAddBullet: (section: "experience" | "projects" | "leadership", index: number) => void;
+  onRemoveBullet: (section: "experience" | "projects" | "leadership", itemIdx: number, bulletIdx: number) => void;
 }
 
 const sectionVariants = {
@@ -21,11 +38,16 @@ const sectionVariants = {
   visible: { opacity: 1, height: "auto" as const, transition: { duration: 0.3, ease: "easeOut" as const } },
 };
 
-function SectionToggle({ icon: Icon, label, children, defaultOpen = false }: { icon: any; label: string; children: React.ReactNode; defaultOpen?: boolean }) {
+function SectionToggle({
+  icon: Icon, label, children, defaultOpen = false, onAdd, addLabel
+}: {
+  icon: any; label: string; children: React.ReactNode; defaultOpen?: boolean;
+  onAdd?: () => void; addLabel?: string;
+}) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border-b border-border/50 last:border-b-0">
-      <button onClick={() => setOpen(!open)} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors">
+    <div className="border-b border-border/40 last:border-b-0">
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center gap-3 px-5 py-3.5 text-sm font-medium text-foreground hover:bg-muted/40 transition-colors">
         <Icon size={16} className="text-primary shrink-0" />
         <span className="flex-1 text-left">{label}</span>
         <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
@@ -35,8 +57,16 @@ function SectionToggle({ icon: Icon, label, children, defaultOpen = false }: { i
       <AnimatePresence>
         {open && (
           <motion.div initial="hidden" animate="visible" exit="hidden" variants={sectionVariants} className="overflow-hidden">
-            <div className="px-4 pb-4 space-y-3">
+            <div className="px-5 pb-4 space-y-3">
               {children}
+              {onAdd && (
+                <button
+                  onClick={onAdd}
+                  className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-dashed border-border/60 text-xs text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors"
+                >
+                  <Plus size={12} /> {addLabel || "Add"}
+                </button>
+              )}
             </div>
           </motion.div>
         )}
@@ -54,10 +84,32 @@ function FieldInput({ label, value, onChange, placeholder }: { label: string; va
   );
 }
 
-export function ResumeEditPanel({ data, onUpdateHeader, onUpdateSummary, onUpdateExperience, onUpdateEducation, onUpdateField }: Props) {
+function ItemCard({ children, onRemove }: { children: React.ReactNode; onRemove?: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+      className="p-3 rounded-lg bg-muted/20 border border-border/30 space-y-2 relative group"
+    >
+      {onRemove && (
+        <button
+          onClick={onRemove}
+          className="absolute top-2 right-2 w-6 h-6 rounded-md flex items-center justify-center text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive hover:bg-destructive/10 transition-all"
+        >
+          <Trash2 size={12} />
+        </button>
+      )}
+      {children}
+    </motion.div>
+  );
+}
+
+export function ResumeEditPanel(props: Props) {
+  const { data, onUpdateHeader, onUpdateSummary, onUpdateExperience, onUpdateEducation, onUpdateField } = props;
+
   return (
     <ScrollArea className="h-full">
       <div className="pb-8">
+        {/* Personal Info */}
         <SectionToggle icon={User} label="Personal Info" defaultOpen>
           <FieldInput label="Full Name" value={data.header.name} onChange={v => onUpdateHeader("name", v)} />
           <FieldInput label="Title / Headline" value={data.header.title} onChange={v => onUpdateHeader("title", v)} />
@@ -69,15 +121,21 @@ export function ResumeEditPanel({ data, onUpdateHeader, onUpdateSummary, onUpdat
             <FieldInput label="Location" value={data.header.location || ""} onChange={v => onUpdateHeader("location", v)} />
             <FieldInput label="LinkedIn" value={data.header.linkedin || ""} onChange={v => onUpdateHeader("linkedin", v)} />
           </div>
+          <div className="grid grid-cols-2 gap-2">
+            <FieldInput label="GitHub" value={data.header.github || ""} onChange={v => onUpdateHeader("github", v)} />
+            <FieldInput label="Website" value={data.header.website || ""} onChange={v => onUpdateHeader("website", v)} />
+          </div>
         </SectionToggle>
 
-        <SectionToggle icon={FileText} label="Summary">
-          <Textarea value={data.summary} onChange={e => onUpdateSummary(e.target.value)} rows={4} className="text-sm bg-background border-border/60 focus:border-primary resize-none" />
+        {/* Summary */}
+        <SectionToggle icon={FileText} label="Professional Summary">
+          <Textarea value={data.summary} onChange={e => onUpdateSummary(e.target.value)} rows={4} className="text-sm bg-background border-border/60 focus:border-primary resize-none" placeholder="Write a compelling professional summary..." />
         </SectionToggle>
 
-        <SectionToggle icon={Briefcase} label="Work Experience">
+        {/* Work Experience */}
+        <SectionToggle icon={Briefcase} label={`Experience (${data.experience.length})`} onAdd={props.onAddExperience} addLabel="Add Experience">
           {data.experience.map((exp, i) => (
-            <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="p-3 rounded-lg bg-muted/30 border border-border/40 space-y-2">
+            <ItemCard key={i} onRemove={() => props.onRemoveExperience(i)}>
               <FieldInput label="Job Title" value={exp.title} onChange={v => onUpdateExperience(i, "title", v)} />
               <div className="grid grid-cols-2 gap-2">
                 <FieldInput label="Company" value={exp.company} onChange={v => onUpdateExperience(i, "company", v)} />
@@ -90,23 +148,36 @@ export function ResumeEditPanel({ data, onUpdateHeader, onUpdateSummary, onUpdat
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Bullet Points</Label>
                 {exp.bullets.map((b, bi) => (
-                  <div key={bi} className="flex gap-1">
+                  <div key={bi} className="flex gap-1 group/bullet">
                     <span className="text-primary mt-2 text-xs">•</span>
                     <Textarea value={b} onChange={e => {
                       const bullets = [...exp.bullets];
                       bullets[bi] = e.target.value;
                       onUpdateExperience(i, "bullets", bullets);
                     }} rows={2} className="text-xs bg-background border-border/60 resize-none flex-1" />
+                    <button
+                      onClick={() => props.onRemoveBullet("experience", i, bi)}
+                      className="w-5 h-5 mt-1.5 rounded flex items-center justify-center text-muted-foreground opacity-0 group-hover/bullet:opacity-100 hover:text-destructive transition-all"
+                    >
+                      <X size={10} />
+                    </button>
                   </div>
                 ))}
+                <button
+                  onClick={() => props.onAddBullet("experience", i)}
+                  className="text-[10px] text-muted-foreground hover:text-primary flex items-center gap-1 mt-1 transition-colors"
+                >
+                  <Plus size={10} /> Add bullet
+                </button>
               </div>
-            </motion.div>
+            </ItemCard>
           ))}
         </SectionToggle>
 
-        <SectionToggle icon={GraduationCap} label="Education">
+        {/* Education */}
+        <SectionToggle icon={GraduationCap} label={`Education (${data.education.length})`} onAdd={props.onAddEducation} addLabel="Add Education">
           {data.education.map((edu, i) => (
-            <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="p-3 rounded-lg bg-muted/30 border border-border/40 space-y-2">
+            <ItemCard key={i} onRemove={() => props.onRemoveEducation(i)}>
               <FieldInput label="Degree" value={edu.degree} onChange={v => onUpdateEducation(i, "degree", v)} />
               <div className="grid grid-cols-2 gap-2">
                 <FieldInput label="School" value={edu.school} onChange={v => onUpdateEducation(i, "school", v)} />
@@ -116,35 +187,146 @@ export function ResumeEditPanel({ data, onUpdateHeader, onUpdateSummary, onUpdat
                 <FieldInput label="Start" value={edu.startDate} onChange={v => onUpdateEducation(i, "startDate", v)} />
                 <FieldInput label="End" value={edu.endDate} onChange={v => onUpdateEducation(i, "endDate", v)} />
               </div>
-              {edu.gpa !== undefined && <FieldInput label="GPA" value={edu.gpa || ""} onChange={v => onUpdateEducation(i, "gpa", v)} />}
-            </motion.div>
+              <FieldInput label="GPA" value={edu.gpa || ""} onChange={v => onUpdateEducation(i, "gpa", v)} />
+            </ItemCard>
           ))}
         </SectionToggle>
 
-        <SectionToggle icon={Wrench} label="Skills">
+        {/* Skills */}
+        <SectionToggle icon={Wrench} label={`Skills (${data.skills.length} categories)`} onAdd={props.onAddSkillCategory} addLabel="Add Skill Category">
           {data.skills.map((skill, i) => (
-            <div key={i} className="space-y-1">
-              <Label className="text-xs text-muted-foreground">{skill.category}</Label>
-              <Input value={skill.items.join(", ")} onChange={e => {
+            <ItemCard key={i} onRemove={() => props.onRemoveSkillCategory(i)}>
+              <FieldInput label="Category Name" value={skill.category} onChange={v => {
                 const skills = [...data.skills];
-                skills[i] = { ...skills[i], items: e.target.value.split(",").map(s => s.trim()) };
+                skills[i] = { ...skills[i], category: v };
                 onUpdateField("skills", skills);
-              }} className="h-8 text-sm bg-background border-border/60" />
-            </div>
+              }} />
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Skills (comma separated)</Label>
+                <Input value={skill.items.join(", ")} onChange={e => {
+                  const skills = [...data.skills];
+                  skills[i] = { ...skills[i], items: e.target.value.split(",").map(s => s.trim()).filter(Boolean) };
+                  onUpdateField("skills", skills);
+                }} className="h-8 text-sm bg-background border-border/60" placeholder="e.g. Python, SQL, Excel" />
+              </div>
+            </ItemCard>
           ))}
         </SectionToggle>
 
-        {data.certifications && (
-          <SectionToggle icon={Award} label="Certifications">
-            {data.certifications.map((cert, i) => (
-              <Input key={i} value={cert} onChange={e => {
+        {/* Projects */}
+        <SectionToggle icon={FolderOpen} label={`Projects (${(data.projects || []).length})`} onAdd={props.onAddProject} addLabel="Add Project">
+          {(data.projects || []).map((proj, i) => (
+            <ItemCard key={i} onRemove={() => props.onRemoveProject(i)}>
+              <FieldInput label="Project Name" value={proj.name} onChange={v => {
+                const projects = [...(data.projects || [])];
+                projects[i] = { ...projects[i], name: v };
+                onUpdateField("projects", projects);
+              }} />
+              <FieldInput label="Description" value={proj.description} onChange={v => {
+                const projects = [...(data.projects || [])];
+                projects[i] = { ...projects[i], description: v };
+                onUpdateField("projects", projects);
+              }} />
+              <FieldInput label="Technologies" value={proj.tech || ""} onChange={v => {
+                const projects = [...(data.projects || [])];
+                projects[i] = { ...projects[i], tech: v };
+                onUpdateField("projects", projects);
+              }} />
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Bullet Points</Label>
+                {proj.bullets.map((b, bi) => (
+                  <div key={bi} className="flex gap-1 group/bullet">
+                    <span className="text-primary mt-2 text-xs">•</span>
+                    <Textarea value={b} onChange={e => {
+                      const projects = [...(data.projects || [])];
+                      const bullets = [...proj.bullets];
+                      bullets[bi] = e.target.value;
+                      projects[i] = { ...projects[i], bullets };
+                      onUpdateField("projects", projects);
+                    }} rows={2} className="text-xs bg-background border-border/60 resize-none flex-1" />
+                    <button
+                      onClick={() => props.onRemoveBullet("projects" as any, i, bi)}
+                      className="w-5 h-5 mt-1.5 rounded flex items-center justify-center text-muted-foreground opacity-0 group-hover/bullet:opacity-100 hover:text-destructive transition-all"
+                    >
+                      <X size={10} />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  onClick={() => props.onAddBullet("projects" as any, i)}
+                  className="text-[10px] text-muted-foreground hover:text-primary flex items-center gap-1 mt-1 transition-colors"
+                >
+                  <Plus size={10} /> Add bullet
+                </button>
+              </div>
+            </ItemCard>
+          ))}
+        </SectionToggle>
+
+        {/* Certifications */}
+        <SectionToggle icon={Award} label={`Certifications (${(data.certifications || []).length})`} onAdd={props.onAddCertification} addLabel="Add Certification">
+          {(data.certifications || []).map((cert, i) => (
+            <ItemCard key={i} onRemove={() => props.onRemoveCertification(i)}>
+              <Input value={cert} onChange={e => {
                 const certs = [...(data.certifications || [])];
                 certs[i] = e.target.value;
                 onUpdateField("certifications", certs);
-              }} className="h-8 text-sm bg-background border-border/60" />
-            ))}
-          </SectionToggle>
-        )}
+              }} className="h-8 text-sm bg-background border-border/60" placeholder="Certification name" />
+            </ItemCard>
+          ))}
+        </SectionToggle>
+
+        {/* Leadership */}
+        <SectionToggle icon={Users} label={`Leadership (${(data.leadership || []).length})`} onAdd={props.onAddLeadership} addLabel="Add Leadership Role">
+          {(data.leadership || []).map((lead, i) => (
+            <ItemCard key={i} onRemove={() => props.onRemoveLeadership(i)}>
+              <FieldInput label="Role" value={lead.role} onChange={v => {
+                const leadership = [...(data.leadership || [])];
+                leadership[i] = { ...leadership[i], role: v };
+                onUpdateField("leadership", leadership);
+              }} />
+              <div className="grid grid-cols-2 gap-2">
+                <FieldInput label="Organization" value={lead.org} onChange={v => {
+                  const leadership = [...(data.leadership || [])];
+                  leadership[i] = { ...leadership[i], org: v };
+                  onUpdateField("leadership", leadership);
+                }} />
+                <FieldInput label="Date" value={lead.date} onChange={v => {
+                  const leadership = [...(data.leadership || [])];
+                  leadership[i] = { ...leadership[i], date: v };
+                  onUpdateField("leadership", leadership);
+                }} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Bullet Points</Label>
+                {lead.bullets.map((b, bi) => (
+                  <div key={bi} className="flex gap-1 group/bullet">
+                    <span className="text-primary mt-2 text-xs">•</span>
+                    <Textarea value={b} onChange={e => {
+                      const leadership = [...(data.leadership || [])];
+                      const bullets = [...lead.bullets];
+                      bullets[bi] = e.target.value;
+                      leadership[i] = { ...leadership[i], bullets };
+                      onUpdateField("leadership", leadership);
+                    }} rows={2} className="text-xs bg-background border-border/60 resize-none flex-1" />
+                    <button
+                      onClick={() => props.onRemoveBullet("leadership", i, bi)}
+                      className="w-5 h-5 mt-1.5 rounded flex items-center justify-center text-muted-foreground opacity-0 group-hover/bullet:opacity-100 hover:text-destructive transition-all"
+                    >
+                      <X size={10} />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  onClick={() => props.onAddBullet("leadership", i)}
+                  className="text-[10px] text-muted-foreground hover:text-primary flex items-center gap-1 mt-1 transition-colors"
+                >
+                  <Plus size={10} /> Add bullet
+                </button>
+              </div>
+            </ItemCard>
+          ))}
+        </SectionToggle>
       </div>
     </ScrollArea>
   );

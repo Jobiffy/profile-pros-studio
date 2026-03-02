@@ -10,11 +10,11 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { action, resumeData, jobDescription, messages } = await req.json();
+    const { action, resumeData, jobDescription, messages, rawText } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const resumeText = formatResumeForAI(resumeData);
+    const resumeText = resumeData ? formatResumeForAI(resumeData) : "";
 
     let systemPrompt = "";
     let userPrompt = "";
@@ -23,7 +23,111 @@ serve(async (req) => {
     let tools: any[] = [];
     let toolChoice: any = undefined;
 
-    if (action === "ats-score") {
+    if (action === "parse-resume") {
+      // Parse raw text into structured resume data
+      if (!rawText) throw new Error("Raw text is required for parsing");
+      useTools = true;
+      systemPrompt = `You are an expert resume parser. Extract all information from the raw resume text and structure it precisely. Be thorough — extract every section, every bullet point, every detail. If a section doesn't exist, return an empty array or omit it. For skills, group them into logical categories. Ensure dates, locations, and details are captured exactly as written.`;
+      userPrompt = `Parse the following resume text into structured data. Extract EVERYTHING — don't skip any content:\n\n${rawText}`;
+      tools = [{
+        type: "function",
+        function: {
+          name: "parsed_resume",
+          description: "Return the parsed resume data",
+          parameters: {
+            type: "object",
+            properties: {
+              header: {
+                type: "object",
+                properties: {
+                  name: { type: "string" },
+                  title: { type: "string" },
+                  email: { type: "string" },
+                  phone: { type: "string" },
+                  linkedin: { type: "string" },
+                  github: { type: "string" },
+                  location: { type: "string" },
+                  website: { type: "string" },
+                },
+                required: ["name", "title", "email", "phone"]
+              },
+              summary: { type: "string" },
+              experience: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    title: { type: "string" },
+                    company: { type: "string" },
+                    location: { type: "string" },
+                    startDate: { type: "string" },
+                    endDate: { type: "string" },
+                    bullets: { type: "array", items: { type: "string" } }
+                  },
+                  required: ["title", "company", "location", "startDate", "endDate", "bullets"]
+                }
+              },
+              education: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    degree: { type: "string" },
+                    school: { type: "string" },
+                    location: { type: "string" },
+                    startDate: { type: "string" },
+                    endDate: { type: "string" },
+                    gpa: { type: "string" }
+                  },
+                  required: ["degree", "school", "location", "startDate", "endDate"]
+                }
+              },
+              skills: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    category: { type: "string" },
+                    items: { type: "array", items: { type: "string" } }
+                  },
+                  required: ["category", "items"]
+                }
+              },
+              projects: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    name: { type: "string" },
+                    description: { type: "string" },
+                    tech: { type: "string" },
+                    bullets: { type: "array", items: { type: "string" } }
+                  },
+                  required: ["name", "description", "bullets"]
+                }
+              },
+              certifications: { type: "array", items: { type: "string" } },
+              leadership: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    role: { type: "string" },
+                    org: { type: "string" },
+                    date: { type: "string" },
+                    bullets: { type: "array", items: { type: "string" } }
+                  },
+                  required: ["role", "org", "date", "bullets"]
+                }
+              }
+            },
+            required: ["header", "summary", "experience", "education", "skills"]
+          }
+        }
+      }];
+      toolChoice = { type: "function", function: { name: "parsed_resume" } };
+
+    } else if (action === "ats-score") {
       useTools = true;
       systemPrompt = `You are an expert ATS (Applicant Tracking System) analyzer. Analyze the resume and provide a detailed ATS compatibility score. Consider formatting, keyword optimization, section organization, quantified achievements, and overall readability.`;
       userPrompt = `Analyze this resume for ATS compatibility:\n\n${resumeText}`;
@@ -117,8 +221,8 @@ Or for array fields like experience bullets:
 }
 \`\`\`
 
-Be conversational, helpful, and proactive. Suggest improvements even if not asked.`;
-      userPrompt = ""; // will use messages array
+Be conversational, helpful, and proactive. Suggest improvements even if not asked. When making changes, ALWAYS include the resume-update JSON block so changes are applied automatically.`;
+      userPrompt = "";
 
     } else {
       throw new Error(`Unknown action: ${action}`);
@@ -127,7 +231,6 @@ Be conversational, helpful, and proactive. Suggest improvements even if not aske
     const aiMessages: any[] = [{ role: "system", content: systemPrompt }];
 
     if (action === "chat" && messages) {
-      // Add resume context as first user message
       aiMessages.push({ role: "user", content: `Here is my current resume data:\n${resumeText}` });
       aiMessages.push({ role: "assistant", content: "I've reviewed your resume. How can I help you improve it?" });
       aiMessages.push(...messages);
@@ -243,6 +346,13 @@ function formatResumeForAI(data: any): string {
   if (data.certifications?.length) {
     lines.push("CERTIFICATIONS");
     for (const c of data.certifications) lines.push(`  • ${c}`);
+  }
+  if (data.leadership?.length) {
+    lines.push("LEADERSHIP");
+    for (const l of data.leadership) {
+      lines.push(`${l.role} at ${l.org} (${l.date})`);
+      for (const b of l.bullets || []) lines.push(`  • ${b}`);
+    }
   }
   return lines.join("\n");
 }
