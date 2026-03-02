@@ -16,36 +16,38 @@ import { MinimalistType } from "./MinimalistType";
 import { ElegantRefined } from "./ElegantRefined";
 import { ResumeData } from "@/types/resume";
 import React from "react";
-import { createTemplate } from "./TemplateFactory";
+import { createTemplate, TemplateExtraProps } from "./TemplateFactory";
 import { allCategoryTemplates } from "./categoryConfigs";
 
-// Original hand-crafted templates
-const originalComponents: Record<string, React.FC<{ data: ResumeData }>> = {
-  "classic-executive": ClassicExecutive,
-  "consulting-pro": ConsultingPro,
-  "strategy-minimal": StrategyMinimal,
-  "finance-sidebar": FinanceSidebar,
-  "leadership-bold": LeadershipBold,
-  "developer-code": DeveloperCode,
-  "startup-modern": StartupModern,
-  "engineering-grid": EngineeringGrid,
-  "data-science": DataScience,
-  "devops-terminal": DevOpsTerminal,
-  "modern-clean": ModernClean,
-  "creative-color": CreativeColor,
-  "professional-classic": ProfessionalClassic,
-  "minimalist-type": MinimalistType,
-  "elegant-refined": ElegantRefined,
+export type TemplateComponentType = React.FC<{ data: ResumeData } & TemplateExtraProps>;
+
+// Original hand-crafted templates (cast to accept extra props they'll just ignore)
+const originalComponents: Record<string, TemplateComponentType> = {
+  "classic-executive": ClassicExecutive as TemplateComponentType,
+  "consulting-pro": ConsultingPro as TemplateComponentType,
+  "strategy-minimal": StrategyMinimal as TemplateComponentType,
+  "finance-sidebar": FinanceSidebar as TemplateComponentType,
+  "leadership-bold": LeadershipBold as TemplateComponentType,
+  "developer-code": DeveloperCode as TemplateComponentType,
+  "startup-modern": StartupModern as TemplateComponentType,
+  "engineering-grid": EngineeringGrid as TemplateComponentType,
+  "data-science": DataScience as TemplateComponentType,
+  "devops-terminal": DevOpsTerminal as TemplateComponentType,
+  "modern-clean": ModernClean as TemplateComponentType,
+  "creative-color": CreativeColor as TemplateComponentType,
+  "professional-classic": ProfessionalClassic as TemplateComponentType,
+  "minimalist-type": MinimalistType as TemplateComponentType,
+  "elegant-refined": ElegantRefined as TemplateComponentType,
 };
 
 // Factory-generated templates
-const factoryComponents: Record<string, React.FC<{ data: ResumeData }>> = {};
+const factoryComponents: Record<string, TemplateComponentType> = {};
 for (const config of allCategoryTemplates) {
   factoryComponents[config.id] = createTemplate(config);
 }
 
 // Combined component map
-export const templateComponents: Record<string, React.FC<{ data: ResumeData }>> = {
+export const templateComponents: Record<string, TemplateComponentType> = {
   ...originalComponents,
   ...factoryComponents,
 };

@@ -307,13 +307,202 @@ function MinimalLayout({ data, config }: { data: ResumeData; config: TemplateSty
 // ══════════════════════════════════════════
 // Factory
 // ══════════════════════════════════════════
-export function createTemplate(config: TemplateStyleConfig): React.FC<{ data: ResumeData }> {
-  const Component: React.FC<{ data: ResumeData }> = ({ data }) => {
+// ── Highlight wrapper ──
+function HighlightWrap({ sectionId, changedFields, showChanges, children }: {
+  sectionId: string; changedFields?: Set<string>; showChanges?: boolean; children: React.ReactNode;
+}) {
+  const isChanged = showChanges && changedFields?.has(sectionId);
+  if (!isChanged) return <>{children}</>;
+  return (
+    <div className="relative">
+      <div className="absolute -inset-1 rounded-md border-2 border-amber-400/60 bg-amber-400/5 pointer-events-none" />
+      <div className="absolute -top-2.5 left-2 px-1.5 py-0.5 rounded text-[8px] font-bold bg-amber-400 text-amber-900 pointer-events-none z-10">
+        AI MODIFIED
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════
+// Ordered section renderer
+// ══════════════════════════════════════════
+interface SectionOrder {
+  id: string;
+  visible: boolean;
+}
+
+function renderSections(
+  data: ResumeData,
+  config: TemplateStyleConfig,
+  sectionOrder?: SectionOrder[],
+  changedFields?: Set<string>,
+  showChanges?: boolean,
+  layoutVariant?: "single" | "sidebar-main" | "sidebar-side"
+) {
+  const c = config.defaultAccent;
+  const order = sectionOrder || [
+    { id: "summary", visible: true }, { id: "experience", visible: true },
+    { id: "education", visible: true }, { id: "skills", visible: true },
+    { id: "projects", visible: true }, { id: "certifications", visible: true },
+    { id: "leadership", visible: true },
+    ...(data.customSections || []).map((_, i) => ({ id: `custom_${i}`, visible: true })),
+  ];
+
+  // For sidebar layouts, some sections go in sidebar vs main
+  const sidebarSections = new Set(["skills", "certifications", "education"]);
+  const filterFn = layoutVariant === "sidebar-side"
+    ? (s: SectionOrder) => sidebarSections.has(s.id)
+    : layoutVariant === "sidebar-main"
+    ? (s: SectionOrder) => !sidebarSections.has(s.id)
+    : () => true;
+
+  return order.filter(s => s.visible).filter(filterFn).map(s => {
+    const key = s.id;
+    if (key === "summary" && data.summary) return (
+      <HighlightWrap key={key} sectionId="summary" changedFields={changedFields} showChanges={showChanges}>
+        <STitle title="Summary" style={config.sectionStyle} color={c} />
+        <p className="text-[10.5px] text-gray-700 leading-[1.6]">{data.summary}</p>
+      </HighlightWrap>
+    );
+    if (key === "experience") return (
+      <HighlightWrap key={key} sectionId="experience" changedFields={changedFields} showChanges={showChanges}>
+        <STitle title="Experience" style={config.sectionStyle} color={c} />
+        {data.experience.map((exp, i) => <ExpBlock key={i} exp={exp} config={config} />)}
+      </HighlightWrap>
+    );
+    if (key === "education") return (
+      <HighlightWrap key={key} sectionId="education" changedFields={changedFields} showChanges={showChanges}>
+        <STitle title="Education" style={config.sectionStyle} color={c} />
+        {data.education.map((edu, i) => <EduBlock key={i} edu={edu} />)}
+      </HighlightWrap>
+    );
+    if (key === "skills") return (
+      <HighlightWrap key={key} sectionId="skills" changedFields={changedFields} showChanges={showChanges}>
+        <STitle title="Skills" style={config.sectionStyle} color={c} />
+        <SkillsBlock skills={data.skills} layout={layoutVariant === "sidebar-side" ? "list" : "grid"} />
+      </HighlightWrap>
+    );
+    if (key === "projects" && data.projects?.length) return (
+      <HighlightWrap key={key} sectionId="projects" changedFields={changedFields} showChanges={showChanges}>
+        <STitle title="Projects" style={config.sectionStyle} color={c} />
+        <ProjectsBlock projects={data.projects} config={config} />
+      </HighlightWrap>
+    );
+    if (key === "certifications" && data.certifications?.length) return (
+      <HighlightWrap key={key} sectionId="certifications" changedFields={changedFields} showChanges={showChanges}>
+        <STitle title="Certifications" style={config.sectionStyle} color={c} />
+        <CertsBlock certs={data.certifications} />
+      </HighlightWrap>
+    );
+    if (key === "leadership" && data.leadership?.length) return (
+      <HighlightWrap key={key} sectionId="leadership" changedFields={changedFields} showChanges={showChanges}>
+        <STitle title="Leadership" style={config.sectionStyle} color={c} />
+        <LeadershipBlock items={data.leadership} config={config} />
+      </HighlightWrap>
+    );
+    // Custom sections
+    if (key.startsWith("custom_")) {
+      const idx = parseInt(key.split("_")[1]);
+      const sec = data.customSections?.[idx];
+      if (!sec) return null;
+      return (
+        <HighlightWrap key={key} sectionId={key} changedFields={changedFields} showChanges={showChanges}>
+          <STitle title={sec.title} style={config.sectionStyle} color={c} />
+          {sec.items.map((item, j) => (
+            <div key={j} className="mb-2">
+              {item.subtitle && <p className="font-semibold text-[11px]">{item.subtitle}</p>}
+              {item.description && <p className="text-[10.5px] text-gray-600">{item.description}</p>}
+              {item.bullets && <Bullets items={item.bullets} style={config.bulletStyle} />}
+            </div>
+          ))}
+        </HighlightWrap>
+      );
+    }
+    return null;
+  });
+}
+
+export interface TemplateExtraProps {
+  sectionOrder?: SectionOrder[];
+  changedFields?: Set<string>;
+  showChanges?: boolean;
+}
+
+export function createTemplate(config: TemplateStyleConfig): React.FC<{ data: ResumeData } & TemplateExtraProps> {
+  const Component: React.FC<{ data: ResumeData } & TemplateExtraProps> = ({ data, sectionOrder, changedFields, showChanges }) => {
+    // Enhanced layouts that use sectionOrder + highlighting
+    const c = config.defaultAccent;
     switch (config.layout) {
-      case "sidebar": return <SidebarLayout data={data} config={config} />;
-      case "banner": return <BannerLayout data={data} config={config} />;
-      case "minimal": return <MinimalLayout data={data} config={config} />;
-      default: return <SingleColumnLayout data={data} config={config} />;
+      case "sidebar": {
+        const isLeft = config.sidebarSide !== "right";
+        const sidebarBg = config.sidebarBg || accent(c);
+        const sidebar = (
+          <div className="p-5 text-white min-h-full" style={{ background: sidebarBg, width: "35%" }}>
+            <h1 className="text-lg font-bold mb-0.5" style={{ fontFamily: config.fontHeading }}>{data.header.name}</h1>
+            <p className="text-[10px] opacity-80 mb-4">{data.header.title}</p>
+            <div className="space-y-3">
+              <div>
+                <p className="text-[9px] font-bold uppercase tracking-[0.2em] opacity-60 mb-1">Contact</p>
+                {[data.header.email, data.header.phone, data.header.location, data.header.linkedin, data.header.website].filter(Boolean).map((x, i) => (
+                  <p key={i} className="text-[9.5px] opacity-90">{x}</p>
+                ))}
+              </div>
+              {renderSections(data, config, sectionOrder, changedFields, showChanges, "sidebar-side")}
+            </div>
+          </div>
+        );
+        const main = (
+          <div className="p-6 flex-1" style={{ fontFamily: config.fontBody }}>
+            {renderSections(data, config, sectionOrder, changedFields, showChanges, "sidebar-main")}
+          </div>
+        );
+        return (
+          <div className="flex min-h-[1123px]" style={{ fontFamily: config.fontBody, color: "#1a1a1a" }}>
+            {isLeft ? <>{sidebar}{main}</> : <>{main}{sidebar}</>}
+          </div>
+        );
+      }
+      case "banner":
+        return (
+          <div style={{ fontFamily: config.fontBody, color: "#1a1a1a" }}>
+            <div className="px-8 py-6 text-white" style={{ background: `linear-gradient(135deg, ${accent(c)}, ${accent(c)}dd)` }}>
+              <h1 className="text-2xl font-bold" style={{ fontFamily: config.fontHeading }}>{data.header.name}</h1>
+              <p className="text-sm opacity-80 mt-0.5">{data.header.title}</p>
+              <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-2 text-[9.5px] opacity-75">
+                {[data.header.email, data.header.phone, data.header.location, data.header.linkedin].filter(Boolean).map((x, i) => <span key={i}>{x}</span>)}
+              </div>
+            </div>
+            <div className="px-8 py-5 text-[11px] leading-relaxed">
+              {renderSections(data, config, sectionOrder, changedFields, showChanges)}
+            </div>
+          </div>
+        );
+      case "minimal":
+        return (
+          <div className="px-10 py-8 text-[11px] leading-relaxed" style={{ fontFamily: config.fontBody, color: "#2a2a2a" }}>
+            <div className="mb-6">
+              <h1 className="text-2xl font-light tracking-wide" style={{ fontFamily: config.fontHeading, color: accent(c) }}>{data.header.name}</h1>
+              <p className="text-xs text-gray-400 mt-1 tracking-wider">{data.header.title}</p>
+              <div className="flex gap-4 mt-2 text-[9px] text-gray-400 tracking-wide">
+                {[data.header.email, data.header.phone, data.header.location, data.header.linkedin].filter(Boolean).map((x, i) => <span key={i}>{x}</span>)}
+              </div>
+              <div className="w-12 h-0.5 mt-4" style={{ background: accent(c) }} />
+            </div>
+            {renderSections(data, config, sectionOrder, changedFields, showChanges)}
+          </div>
+        );
+      default:
+        return (
+          <div className="p-8 text-[11px] leading-relaxed" style={{ fontFamily: config.fontBody, color: "#1a1a1a" }}>
+            <div className={config.headerAlign === "center" ? "text-center mb-4" : "mb-4"}>
+              <h1 className="text-xl font-bold tracking-wide" style={{ fontFamily: config.fontHeading, color: accent(c) }}>{data.header.name}</h1>
+              <p className="text-xs text-gray-500 mt-0.5">{data.header.title}</p>
+              {config.headerAlign === "center" ? <ContactLine h={data.header} /> : <ContactLineLeft h={data.header} />}
+            </div>
+            {renderSections(data, config, sectionOrder, changedFields, showChanges)}
+          </div>
+        );
     }
   };
   Component.displayName = `Template`;
