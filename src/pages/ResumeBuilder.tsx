@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { templateList, templateComponents } from "@/templates";
 import { TemplateInfo } from "@/types/resume";
@@ -12,16 +12,17 @@ import { TemplateGallery } from "@/components/resume/TemplateGallery";
 import { OnboardingTour } from "@/components/resume/OnboardingTour";
 import { ResumeImport } from "@/components/resume/ResumeImport";
 import { ColorPalettePanel } from "@/components/resume/ColorPalette";
+import { SectionManager, SectionItem, getDefaultSections } from "@/components/resume/SectionManager";
 import { exportToPDF } from "@/lib/exportResume";
 import { toast } from "@/hooks/use-toast";
 import {
   FileText, Sparkles, MessageSquare, Target, Briefcase,
   Download, Upload, Palette, Zap, Eye, EyeOff,
-  PanelLeftClose, PanelLeftOpen,
+  PanelLeftClose, PanelLeftOpen, LayoutList,
 } from "lucide-react";
 
 type RightPanel = "none" | "ats" | "jd" | "chat";
-type LeftTab = "edit" | "templates";
+type LeftTab = "edit" | "templates" | "sections";
 
 const ResumeBuilder = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateInfo>(templateList[0]);
@@ -39,6 +40,27 @@ const ResumeBuilder = () => {
     colorPalette, setColorPalette, customColor, applyCustomColor,
     changedFields, showChanges, setShowChanges, clearChanges, markChanged,
   } = resumeState;
+
+  const [sectionItems, setSectionItems] = useState<SectionItem[]>(() => getDefaultSections(resumeData.customSections));
+
+  const handleAddCustomSection = useCallback((title: string) => {
+    resumeState.addCustomSection();
+    // Update the last added custom section's title
+    setResumeData(prev => {
+      const customs = [...(prev.customSections || [])];
+      customs[customs.length - 1] = { ...customs[customs.length - 1], title };
+      return { ...prev, customSections: customs };
+    });
+    setSectionItems(prev => [...prev, { id: `custom_${(resumeData.customSections || []).length}`, label: title, visible: true, isCustom: true }]);
+  }, [resumeState, resumeData.customSections, setResumeData]);
+
+  const handleRemoveCustomSection = useCallback((sectionId: string) => {
+    const idx = parseInt(sectionId.split("_")[1]);
+    if (!isNaN(idx)) {
+      resumeState.removeCustomSection(idx);
+      setSectionItems(prev => prev.filter(s => s.id !== sectionId));
+    }
+  }, [resumeState]);
 
   const {
     atsResult, atsLoading, analyzeATS,
@@ -148,6 +170,7 @@ const ResumeBuilder = () => {
               {[
                 { id: "edit" as LeftTab, icon: FileText, label: "Editor" },
                 { id: "templates" as LeftTab, icon: Sparkles, label: "Templates" },
+                { id: "sections" as LeftTab, icon: LayoutList, label: "Sections" },
               ].map(tab => (
                 <button
                   key={tab.id}
@@ -165,7 +188,6 @@ const ResumeBuilder = () => {
               ))}
             </div>
 
-            {/* Sidebar Content */}
             <div className="flex-1 overflow-hidden">
               <AnimatePresence mode="wait">
                 {leftTab === "edit" ? (
@@ -193,9 +215,18 @@ const ResumeBuilder = () => {
                       onRemoveBullet={resumeState.removeBullet}
                     />
                   </motion.div>
-                ) : (
+                ) : leftTab === "templates" ? (
                   <motion.div key="templates" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full">
                     <TemplateGallery selected={selectedTemplate} onSelect={setSelectedTemplate} />
+                  </motion.div>
+                ) : (
+                  <motion.div key="sections" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full">
+                    <SectionManager
+                      sections={sectionItems}
+                      onSectionsChange={setSectionItems}
+                      onAddCustomSection={handleAddCustomSection}
+                      onRemoveCustomSection={handleRemoveCustomSection}
+                    />
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -287,7 +318,12 @@ const ResumeBuilder = () => {
                 ['--resume-accent-dark' as any]: colorPalette.accentDark,
               }}
             >
-              <TemplateComponent data={resumeData} />
+              <TemplateComponent
+                data={resumeData}
+                sectionOrder={sectionItems.map(s => ({ id: s.id, visible: s.visible }))}
+                changedFields={changedFields}
+                showChanges={showChanges}
+              />
               {showChanges && changedFields.size > 0 && (
                 <div className="absolute inset-0 pointer-events-none">
                   <div className="absolute top-2 right-2 px-2 py-1 rounded bg-amber-500 text-white text-[9px] font-medium shadow-lg pointer-events-auto">
