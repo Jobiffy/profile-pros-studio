@@ -21,7 +21,7 @@ import { allCategoryTemplates } from "./categoryConfigs";
 
 export type TemplateComponentType = React.FC<{ data: ResumeData } & TemplateExtraProps>;
 
-// Original hand-crafted templates (cast to accept extra props they'll just ignore)
+// Original hand-crafted templates (now support sectionOrder)
 const originalComponents: Record<string, TemplateComponentType> = {
   "classic-executive": ClassicExecutive as TemplateComponentType,
   "consulting-pro": ConsultingPro as TemplateComponentType,

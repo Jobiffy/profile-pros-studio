@@ -1,19 +1,40 @@
-// Generic Template 3: Professional Classic - Classic two-column
+// Generic Template 3: Professional Classic
+import React from "react";
 import { ResumeData } from "@/types/resume";
+import { renderOrderedSections, SectionOrderItem } from "./sectionRenderer";
 
-export const ProfessionalClassic = ({ data }: { data: ResumeData }) => (
-  <div className="flex text-[11px] font-source" style={{ color: '#1a1a1a' }}>
-    {/* Sidebar */}
-    <div className="w-[32%] p-6" style={{ background: 'var(--resume-accent-dark, #2d3748)', color: '#e2e8f0' }}>
-      <h1 className="text-lg font-bold text-white mb-4">{data.header.name}</h1>
+const sidebarSections = new Set(["skills", "certifications"]);
 
-      <PSide title="CONTACT">
-        <p className="mb-0.5">{data.header.email}</p>
-        <p className="mb-0.5">{data.header.phone}</p>
-        {data.header.location && <p className="mb-0.5">{data.header.location}</p>}
-        {data.header.linkedin && <p>{data.header.linkedin}</p>}
-      </PSide>
-
+export const ProfessionalClassic = ({ data, sectionOrder }: { data: ResumeData; sectionOrder?: SectionOrderItem[] }) => {
+  const sectionMap: Record<string, () => React.ReactNode> = {
+    summary: () => data.summary ? (
+      <p className="text-[10.5px] leading-relaxed mb-5 pb-4" style={{ color: '#555', borderBottom: '1px solid #e2e8f0' }}>{data.summary}</p>
+    ) : null,
+    experience: () => (
+      <PMain title="WORK EXPERIENCE">
+        {data.experience.map((exp, i) => (
+          <div key={i} className="mb-4">
+            <div className="flex justify-between">
+              <h3 className="font-bold">{exp.title}</h3>
+              <span className="text-[10px]" style={{ color: '#a0aec0' }}>{exp.startDate} – {exp.endDate}</span>
+            </div>
+            <p className="text-[10px] italic mb-1" style={{ color: '#718096' }}>{exp.company}, {exp.location}</p>
+            <ul className="list-disc ml-4 space-y-0.5">{exp.bullets.map((b, j) => <li key={j}>{b}</li>)}</ul>
+          </div>
+        ))}
+      </PMain>
+    ),
+    education: () => (
+      <PMain title="EDUCATION">
+        {data.education.map((edu, i) => (
+          <div key={i} className="mb-2 flex justify-between">
+            <div><span className="font-bold">{edu.degree}</span> – {edu.school}{edu.gpa && ` (${edu.gpa})`}</div>
+            <span className="text-[10px]">{edu.endDate}</span>
+          </div>
+        ))}
+      </PMain>
+    ),
+    skills: () => (
       <PSide title="SKILLS">
         {data.skills.map((s, i) => (
           <div key={i} className="mb-3">
@@ -31,65 +52,76 @@ export const ProfessionalClassic = ({ data }: { data: ResumeData }) => (
           </div>
         ))}
       </PSide>
+    ),
+    certifications: () => data.certifications?.length ? (
+      <PSide title="CERTIFICATIONS">
+        {data.certifications.map((c, i) => <p key={i} className="mb-1 text-[10px]">▸ {c}</p>)}
+      </PSide>
+    ) : null,
+    projects: () => data.projects?.length ? (
+      <PMain title="PROJECTS">
+        {data.projects.map((p, i) => (
+          <div key={i} className="mb-2">
+            <p className="font-bold">{p.name}{p.tech && <span className="font-normal text-[10px]" style={{ color: '#a0aec0' }}> · {p.tech}</span>}</p>
+            {p.bullets.map((b, j) => <p key={j} className="pl-2 text-[10px]">• {b}</p>)}
+          </div>
+        ))}
+      </PMain>
+    ) : null,
+    leadership: () => data.leadership?.length ? (
+      <PMain title="LEADERSHIP">
+        {data.leadership.map((l, i) => (
+          <div key={i} className="mb-2">
+            <p className="font-bold">{l.role} – {l.org}</p>
+            {l.bullets.map((b, j) => <p key={j} className="pl-2 text-[10px]">• {b}</p>)}
+          </div>
+        ))}
+      </PMain>
+    ) : null,
+  };
 
-      {data.certifications && (
-        <PSide title="CERTIFICATIONS">
-          {data.certifications.map((c, i) => <p key={i} className="mb-1 text-[10px]">▸ {c}</p>)}
+  (data.customSections || []).forEach((sec, i) => {
+    sectionMap[`custom_${i}`] = () => (
+      <PMain title={sec.title.toUpperCase()}>
+        {sec.items.map((item, j) => (
+          <div key={j} className="mb-2">
+            {item.subtitle && <p className="font-bold">{item.subtitle}</p>}
+            {item.description && <p className="text-[10px]">{item.description}</p>}
+            {item.bullets?.map((b, k) => <p key={k} className="pl-2 text-[10px]">• {b}</p>)}
+          </div>
+        ))}
+      </PMain>
+    );
+  });
+
+  const order = sectionOrder || Object.keys(sectionMap).map(id => ({ id, visible: true }));
+  const sideItems = order.filter(s => s.visible && sidebarSections.has(s.id));
+  const mainItems = order.filter(s => s.visible && !sidebarSections.has(s.id));
+
+  return (
+    <div className="flex text-[11px] font-source" style={{ color: '#1a1a1a' }}>
+      <div className="w-[32%] p-6" style={{ background: 'var(--resume-accent-dark, #2d3748)', color: '#e2e8f0' }}>
+        <h1 className="text-lg font-bold text-white mb-4">{data.header.name}</h1>
+        <PSide title="CONTACT">
+          <p className="mb-0.5">{data.header.email}</p>
+          <p className="mb-0.5">{data.header.phone}</p>
+          {data.header.location && <p className="mb-0.5">{data.header.location}</p>}
+          {data.header.linkedin && <p>{data.header.linkedin}</p>}
         </PSide>
-      )}
+        {sideItems.map(s => {
+          const fn = sectionMap[s.id];
+          return fn ? <React.Fragment key={s.id}>{fn()}</React.Fragment> : null;
+        })}
+      </div>
+      <div className="w-[68%] p-6">
+        {mainItems.map(s => {
+          const fn = sectionMap[s.id];
+          return fn ? <React.Fragment key={s.id}>{fn()}</React.Fragment> : null;
+        })}
+      </div>
     </div>
-
-    {/* Main */}
-    <div className="w-[68%] p-6">
-      <p className="text-[10.5px] leading-relaxed mb-5 pb-4" style={{ color: '#555', borderBottom: '1px solid #e2e8f0' }}>{data.summary}</p>
-
-      <PMain title="WORK EXPERIENCE">
-        {data.experience.map((exp, i) => (
-          <div key={i} className="mb-4">
-            <div className="flex justify-between">
-              <h3 className="font-bold">{exp.title}</h3>
-              <span className="text-[10px]" style={{ color: '#a0aec0' }}>{exp.startDate} – {exp.endDate}</span>
-            </div>
-            <p className="text-[10px] italic mb-1" style={{ color: '#718096' }}>{exp.company}, {exp.location}</p>
-            <ul className="list-disc ml-4 space-y-0.5">{exp.bullets.map((b, j) => <li key={j}>{b}</li>)}</ul>
-          </div>
-        ))}
-      </PMain>
-
-      <PMain title="EDUCATION">
-        {data.education.map((edu, i) => (
-          <div key={i} className="mb-2 flex justify-between">
-            <div><span className="font-bold">{edu.degree}</span> – {edu.school}{edu.gpa && ` (${edu.gpa})`}</div>
-            <span className="text-[10px]">{edu.endDate}</span>
-          </div>
-        ))}
-      </PMain>
-
-      {data.projects && (
-        <PMain title="PROJECTS">
-          {data.projects.map((p, i) => (
-            <div key={i} className="mb-2">
-              <p className="font-bold">{p.name}{p.tech && <span className="font-normal text-[10px]" style={{ color: '#a0aec0' }}> · {p.tech}</span>}</p>
-              {p.bullets.map((b, j) => <p key={j} className="pl-2 text-[10px]">• {b}</p>)}
-            </div>
-          ))}
-        </PMain>
-      )}
-
-      {(data.customSections || []).map((sec, i) => (
-        <PMain key={i} title={sec.title.toUpperCase()}>
-          {sec.items.map((item, j) => (
-            <div key={j} className="mb-2">
-              {item.subtitle && <p className="font-bold">{item.subtitle}</p>}
-              {item.description && <p className="text-[10px]">{item.description}</p>}
-              {item.bullets?.map((b, k) => <p key={k} className="pl-2 text-[10px]">• {b}</p>)}
-            </div>
-          ))}
-        </PMain>
-      ))}
-    </div>
-  </div>
-);
+  );
+};
 
 const PSide = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <div className="mb-5">

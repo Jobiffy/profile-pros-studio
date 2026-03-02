@@ -13,12 +13,12 @@ import { OnboardingTour } from "@/components/resume/OnboardingTour";
 import { ResumeImport } from "@/components/resume/ResumeImport";
 import { ColorPalettePanel } from "@/components/resume/ColorPalette";
 import { SectionManager, SectionItem, getDefaultSections } from "@/components/resume/SectionManager";
-import { exportToPDF } from "@/lib/exportResume";
+import { exportToPDF, exportToDOCX } from "@/lib/exportResume";
 import { toast } from "@/hooks/use-toast";
 import {
   FileText, Sparkles, MessageSquare, Target, Briefcase,
   Download, Upload, Palette, Zap, Eye, EyeOff,
-  PanelLeftClose, PanelLeftOpen, LayoutList,
+  PanelLeftClose, PanelLeftOpen, LayoutList, Sun, Moon, FileDown,
 } from "lucide-react";
 
 type RightPanel = "none" | "ats" | "jd" | "chat";
@@ -33,6 +33,14 @@ const ResumeBuilder = () => {
   const [showColorPalette, setShowColorPalette] = useState(false);
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [previewScale, setPreviewScale] = useState(0.65);
+  const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains("dark"));
+
+  const toggleTheme = useCallback(() => {
+    const next = !darkMode;
+    setDarkMode(next);
+    document.documentElement.classList.toggle("dark", next);
+    localStorage.setItem("jobiffy-theme", next ? "dark" : "light");
+  }, [darkMode]);
 
   const resumeState = useResumeData();
   const {
@@ -96,6 +104,12 @@ const ResumeBuilder = () => {
   useEffect(() => {
     const visited = localStorage.getItem("jobiffy-onboarded");
     if (!visited) setShowOnboarding(true);
+    // Restore theme
+    const savedTheme = localStorage.getItem("jobiffy-theme");
+    if (savedTheme === "dark") {
+      document.documentElement.classList.add("dark");
+      setDarkMode(true);
+    }
   }, []);
 
   const handleOnboardingComplete = () => {
@@ -284,6 +298,13 @@ const ResumeBuilder = () => {
           </div>
 
           <div className="flex items-center gap-1.5">
+            {/* Theme Toggle */}
+            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={toggleTheme}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
+              title={darkMode ? "Switch to light mode" : "Switch to dark mode"}>
+              {darkMode ? <Sun size={15} /> : <Moon size={15} />}
+            </motion.button>
+
             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setShowImport(true)}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all">
               <Upload size={14} /> Import
@@ -310,12 +331,22 @@ const ResumeBuilder = () => {
 
             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
               onClick={async () => {
+                toast({ title: "Exporting DOCX..." });
+                await exportToDOCX(orderedResumeData, `${resumeData.header.name.replace(/\s+/g, '_')}_Resume.docx`);
+                toast({ title: "DOCX downloaded!" });
+              }}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all">
+              <FileDown size={14} /> DOCX
+            </motion.button>
+
+            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+              onClick={async () => {
                 toast({ title: "Exporting PDF..." });
                 await exportToPDF("resume-preview", `${resumeData.header.name.replace(/\s+/g, '_')}_Resume.pdf`);
                 toast({ title: "PDF downloaded!" });
               }}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium bg-primary text-primary-foreground shadow-sm hover:opacity-90 transition-opacity" id="export-btn">
-              <Download size={14} /> Export PDF
+              <Download size={14} /> PDF
             </motion.button>
           </div>
         </motion.div>
