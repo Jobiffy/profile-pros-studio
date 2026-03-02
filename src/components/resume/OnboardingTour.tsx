@@ -1,49 +1,55 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FileText, Sparkles, MessageSquare, Target, Briefcase, Download, X } from "lucide-react";
+import { Target, Briefcase, MessageSquare, FileText, Sparkles, Download, X, ArrowRight, Star, Zap } from "lucide-react";
 
 const steps = [
   {
-    icon: FileText,
-    title: "Edit Your Resume",
-    description: "Click the edit icon to open the form panel. Fill in your personal info, experience, education, and skills.",
-    highlight: "edit-panel",
-    position: "right" as const,
+    icon: Sparkles,
+    title: "Welcome to Jobiffy! 🎉",
+    description: "Your AI-powered resume builder that helps you land more interviews. Let's take a quick tour of the features that make Jobiffy special.",
+    highlight: "",
+    isUSP: false,
   },
   {
-    icon: Sparkles,
-    title: "Choose a Template",
-    description: "Browse 15 stunning templates across MBA, Tech, and Generic categories. Click any template to preview instantly.",
-    highlight: "template-panel",
-    position: "right" as const,
+    icon: FileText,
+    title: "Edit & Customize",
+    description: "Import your resume or start from scratch. Choose from 15+ templates across MBA, Tech, HR-friendly, and Freshers categories. Customize colors, fonts, and every detail.",
+    highlight: "edit-panel",
+    isUSP: false,
   },
   {
     icon: Target,
-    title: "Check ATS Score",
-    description: "Our AI analyzes your resume for ATS compatibility. Get actionable feedback to improve your pass rate.",
+    title: "⭐ Resume Score — Your Secret Weapon",
+    description: "Get an instant ATS compatibility score. Our AI analyzes formatting, keywords, quantified achievements, and readability. Most resumes score under 60 — we help you hit 90+.",
     highlight: "ats-panel",
-    position: "left" as const,
+    isUSP: true,
+    uspLabel: "CORE USP",
+    uspColor: "from-emerald-500 to-primary",
   },
   {
     icon: Briefcase,
-    title: "Match Job Descriptions",
-    description: "Paste any job description and see how well your resume matches. Get keyword suggestions to boost your score.",
+    title: "⭐ JD Matcher — Land More Interviews",
+    description: "Paste a job link or description and see your match score instantly. Get missing keywords, skills gap analysis, and exact recommendations to increase your match rate by 40%+.",
     highlight: "jd-panel",
-    position: "left" as const,
+    isUSP: true,
+    uspLabel: "CORE USP",
+    uspColor: "from-blue-500 to-cyan-500",
   },
   {
     icon: MessageSquare,
-    title: "AI Resume Coach",
-    description: "Chat with our AI to improve your resume in real-time. It can rewrite bullets, enhance your summary, and more!",
+    title: "⭐ AI Coach — Rewrite in Seconds",
+    description: "Chat with your personal AI resume coach. It rewrites bullets with metrics, tailors your resume for specific roles, and applies changes to your resume in real-time. Like having an expert career counselor 24/7.",
     highlight: "chat-panel",
-    position: "left" as const,
+    isUSP: true,
+    uspLabel: "CORE USP",
+    uspColor: "from-violet-500 to-purple-600",
   },
   {
     icon: Download,
     title: "Export & Apply",
-    description: "When you're satisfied, export your resume as a PDF. You're ready to land your dream job!",
+    description: "Download your polished resume as PDF or DOCX. Every formatting detail is preserved. You're ready to apply with confidence!",
     highlight: "export-btn",
-    position: "center" as const,
+    isUSP: false,
   },
 ];
 
@@ -61,7 +67,6 @@ export function OnboardingTour({ onComplete, onNavigate }: Props) {
   const handleNext = () => {
     if (step < steps.length - 1) {
       setStep(step + 1);
-      // Navigate to relevant panel
       const panelMap: Record<string, string> = {
         "edit-panel": "edit",
         "template-panel": "templates",
@@ -86,7 +91,7 @@ export function OnboardingTour({ onComplete, onNavigate }: Props) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 bg-foreground/40 backdrop-blur-sm flex items-center justify-center"
+        className="fixed inset-0 z-50 bg-foreground/50 backdrop-blur-md flex items-center justify-center"
       >
         <motion.div
           key={step}
@@ -94,16 +99,39 @@ export function OnboardingTour({ onComplete, onNavigate }: Props) {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: -20 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          className="bg-card border border-border rounded-2xl p-6 max-w-md mx-4 shadow-2xl"
+          className={`bg-card border rounded-2xl p-6 max-w-md mx-4 shadow-2xl relative overflow-hidden ${
+            (current as any).isUSP ? "border-primary/40" : "border-border"
+          }`}
         >
-          <div className="flex justify-between items-start mb-4">
+          {/* USP badge */}
+          {(current as any).isUSP && (
+            <motion.div
+              initial={{ x: 100 }}
+              animate={{ x: 0 }}
+              className={`absolute top-0 right-0 px-3 py-1 rounded-bl-xl text-[9px] font-bold text-white tracking-wider bg-gradient-to-r ${(current as any).uspColor}`}
+            >
+              <Star size={8} className="inline mr-1" />
+              {(current as any).uspLabel}
+            </motion.div>
+          )}
+
+          {/* Decorative glow for USP steps */}
+          {(current as any).isUSP && (
+            <div className={`absolute -top-20 -right-20 w-40 h-40 rounded-full opacity-10 bg-gradient-to-br ${(current as any).uspColor} blur-3xl`} />
+          )}
+
+          <div className="flex justify-between items-start mb-4 relative">
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: "spring" }}
-              className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center"
+              className={`w-14 h-14 rounded-xl flex items-center justify-center ${
+                (current as any).isUSP 
+                  ? `bg-gradient-to-br ${(current as any).uspColor} shadow-lg`
+                  : "bg-primary/10"
+              }`}
             >
-              <current.icon size={24} className="text-primary" />
+              <current.icon size={26} className={(current as any).isUSP ? "text-white" : "text-primary"} />
             </motion.div>
             <button onClick={() => { setVisible(false); onComplete(); }} className="text-muted-foreground hover:text-foreground transition-colors">
               <X size={18} />
@@ -114,7 +142,7 @@ export function OnboardingTour({ onComplete, onNavigate }: Props) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-lg font-semibold text-foreground mb-2"
+            className={`text-lg font-bold mb-2 ${(current as any).isUSP ? "text-primary" : "text-foreground"}`}
           >
             {current.title}
           </motion.h3>
@@ -129,12 +157,14 @@ export function OnboardingTour({ onComplete, onNavigate }: Props) {
 
           <div className="flex items-center justify-between mt-6">
             <div className="flex gap-1.5">
-              {steps.map((_, i) => (
+              {steps.map((s, i) => (
                 <motion.div
                   key={i}
                   animate={{
                     width: i === step ? 24 : 6,
-                    backgroundColor: i === step ? "hsl(var(--primary))" : i < step ? "hsl(var(--primary))" : "hsl(var(--border))",
+                    backgroundColor: i === step 
+                      ? ((steps[i] as any).isUSP ? "hsl(var(--primary))" : "hsl(var(--primary))") 
+                      : i < step ? "hsl(var(--primary) / 0.4)" : "hsl(var(--border))",
                   }}
                   className="h-1.5 rounded-full"
                   transition={{ duration: 0.3 }}
@@ -144,15 +174,23 @@ export function OnboardingTour({ onComplete, onNavigate }: Props) {
 
             <div className="flex gap-2">
               <button onClick={() => { setVisible(false); onComplete(); }} className="px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground transition-colors">
-                Skip tour
+                Skip
               </button>
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleNext}
-                className="px-4 py-1.5 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+                className={`px-5 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                  (current as any).isUSP 
+                    ? `bg-gradient-to-r ${(current as any).uspColor} text-white shadow-md` 
+                    : "bg-primary text-primary-foreground hover:opacity-90"
+                }`}
               >
-                {step === steps.length - 1 ? "Get Started!" : "Next"}
+                {step === steps.length - 1 ? (
+                  <><Zap size={12} /> Start Building!</>
+                ) : (
+                  <><span>Next</span> <ArrowRight size={12} /></>
+                )}
               </motion.button>
             </div>
           </div>
