@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { JDMatchResult } from "@/hooks/useResumeAI";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
-import { Briefcase, Loader2, CheckCircle2, XCircle, ArrowRight, Link2, FileText, Globe, AlertCircle } from "lucide-react";
+import { Briefcase, Loader2, CheckCircle2, XCircle, ArrowRight, Link2, FileText, Globe, AlertCircle, Wand2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -11,6 +11,8 @@ interface Props {
   result: JDMatchResult | null;
   loading: boolean;
   onMatch: (jd: string) => void;
+  onTailor?: (jd: string) => void;
+  tailorLoading?: boolean;
 }
 
 function MatchRing({ score }: { score: number }) {
@@ -33,7 +35,7 @@ function MatchRing({ score }: { score: number }) {
 
 type InputMode = "paste" | "url";
 
-export function JDMatchPanel({ result, loading, onMatch }: Props) {
+export function JDMatchPanel({ result, loading, onMatch, onTailor, tailorLoading }: Props) {
   const [jd, setJd] = useState("");
   const [jobUrl, setJobUrl] = useState("");
   const [inputMode, setInputMode] = useState<InputMode>("paste");
@@ -70,7 +72,7 @@ export function JDMatchPanel({ result, loading, onMatch }: Props) {
           </div>
           <div>
             <h3 className="text-sm font-semibold text-foreground">JD Matcher</h3>
-            <p className="text-[10px] text-muted-foreground">See how well your resume matches a job</p>
+            <p className="text-[10px] text-muted-foreground">Match & tailor your resume to any job</p>
           </div>
         </div>
       </div>
@@ -154,6 +156,25 @@ export function JDMatchPanel({ result, loading, onMatch }: Props) {
                 <MatchRing score={result.matchScore} />
                 <p className="text-xs text-muted-foreground mt-1">{result.experienceMatch}</p>
               </div>
+
+              {/* ★ TAILOR RESUME BUTTON ★ */}
+              {onTailor && (
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => jd.trim() && onTailor(jd)}
+                  disabled={tailorLoading}
+                  className="w-full py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-violet-500 to-blue-500 text-white hover:from-violet-600 hover:to-blue-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-violet-500/20"
+                >
+                  {tailorLoading ? (
+                    <><Loader2 size={16} className="animate-spin" /> Tailoring your resume...</>
+                  ) : (
+                    <><Wand2 size={16} /> Tailor Resume to This JD</>
+                  )}
+                </motion.button>
+              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <div>

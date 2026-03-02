@@ -3,30 +3,21 @@ import { templateList } from "@/templates";
 import { TemplateInfo } from "@/types/resume";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState } from "react";
-import { Briefcase, Code, Layout, GraduationCap, Heart, Search } from "lucide-react";
+import { Briefcase, Code, Layout, GraduationCap, Heart, Search, TrendingUp, BarChart3, LineChart, Package, Check } from "lucide-react";
 
-type CategoryFilter = "all" | "mba" | "tech" | "generic" | "hr" | "freshers";
+type CategoryFilter = "all" | "marketing" | "sales" | "consulting" | "pm" | "tech" | "hr" | "freshers" | "generic";
 
-const subcategories: Record<string, string[]> = {
-  mba: ["Marketing", "Sales", "Consulting", "Product Manager", "Strategy", "Finance"],
-  tech: ["Software Engineer", "Data Science", "DevOps", "Frontend", "Full Stack"],
-  generic: ["Modern", "Classic", "Minimalist", "Creative"],
-  hr: ["ATS-Optimized", "Clean Format", "Professional"],
-  freshers: ["Entry Level", "Internship", "Graduate"],
+const categoryMeta: Record<string, { icon: any; label: string }> = {
+  all: { icon: Layout, label: "All" },
+  marketing: { icon: TrendingUp, label: "Marketing" },
+  sales: { icon: BarChart3, label: "Sales" },
+  consulting: { icon: LineChart, label: "Consulting" },
+  pm: { icon: Package, label: "Product" },
+  tech: { icon: Code, label: "Tech" },
+  hr: { icon: Heart, label: "HR Picks" },
+  freshers: { icon: GraduationCap, label: "Freshers" },
+  generic: { icon: Briefcase, label: "Generic" },
 };
-
-const categoryMeta: Record<string, { icon: any; label: string; color: string }> = {
-  all: { icon: Layout, label: "All", color: "text-foreground" },
-  mba: { icon: Briefcase, label: "MBA", color: "text-amber-500" },
-  tech: { icon: Code, label: "Tech", color: "text-blue-500" },
-  generic: { icon: Layout, label: "Generic", color: "text-violet-500" },
-  hr: { icon: Heart, label: "HR Picks", color: "text-rose-500" },
-  freshers: { icon: GraduationCap, label: "Freshers", color: "text-emerald-500" },
-};
-
-// Map templates to additional categories
-const hrTemplates = ["modern-clean", "professional-classic", "classic-executive", "elegant-refined", "minimalist-type"];
-const fresherTemplates = ["modern-clean", "startup-modern", "creative-color", "minimalist-type", "engineering-grid"];
 
 interface Props {
   selected: TemplateInfo;
@@ -39,10 +30,7 @@ export function TemplateGallery({ selected, onSelect }: Props) {
 
   const getFiltered = () => {
     let list = templateList;
-    if (filter === "hr") list = templateList.filter(t => hrTemplates.includes(t.id));
-    else if (filter === "freshers") list = templateList.filter(t => fresherTemplates.includes(t.id));
-    else if (filter !== "all") list = templateList.filter(t => t.category === filter);
-    
+    if (filter !== "all") list = list.filter(t => t.category === filter);
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(t => t.name.toLowerCase().includes(q) || t.description.toLowerCase().includes(q));
@@ -51,13 +39,14 @@ export function TemplateGallery({ selected, onSelect }: Props) {
   };
 
   const filtered = getFiltered();
+  const counts: Record<string, number> = {};
+  for (const t of templateList) counts[t.category] = (counts[t.category] || 0) + 1;
 
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 pb-2 space-y-3">
-        <h3 className="text-sm font-semibold text-foreground">Templates</h3>
+        <h3 className="text-sm font-semibold text-foreground">Templates <span className="text-muted-foreground font-normal">({templateList.length})</span></h3>
         
-        {/* Search */}
         <div className="relative">
           <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -68,16 +57,16 @@ export function TemplateGallery({ selected, onSelect }: Props) {
           />
         </div>
 
-        {/* Category pills */}
         <div className="flex flex-wrap gap-1">
           {(Object.keys(categoryMeta) as CategoryFilter[]).map(cat => {
             const meta = categoryMeta[cat];
             const Icon = meta.icon;
+            const count = cat === "all" ? templateList.length : (counts[cat] || 0);
             return (
               <button
                 key={cat}
                 onClick={() => setFilter(cat)}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-medium transition-all ${
+                className={`flex items-center gap-1 px-2 py-1.5 rounded-full text-[10px] font-medium transition-all ${
                   filter === cat 
                     ? "bg-primary text-primary-foreground shadow-sm" 
                     : "bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -85,63 +74,58 @@ export function TemplateGallery({ selected, onSelect }: Props) {
               >
                 <Icon size={10} />
                 {meta.label}
+                <span className="opacity-60">({count})</span>
               </button>
             );
           })}
         </div>
-
-        {/* Subcategory tags */}
-        {filter !== "all" && subcategories[filter] && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="flex flex-wrap gap-1">
-            {subcategories[filter].map(sub => (
-              <span key={sub} className="px-2 py-0.5 rounded text-[9px] bg-muted/50 text-muted-foreground border border-border/30">
-                {sub}
-              </span>
-            ))}
-          </motion.div>
-        )}
       </div>
 
       <ScrollArea className="flex-1 px-3 pb-3">
         <div className="space-y-2">
           {filtered.length === 0 && (
-            <div className="text-center py-8 text-xs text-muted-foreground">
-              No templates match your search
-            </div>
+            <div className="text-center py-8 text-xs text-muted-foreground">No templates match your search</div>
           )}
-          {filtered.map((t, i) => (
-            <motion.button
-              key={t.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.03 }}
-              onClick={() => onSelect(t)}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-              className="w-full text-left p-3 rounded-lg transition-all border"
-              style={{
-                background: selected.id === t.id ? 'hsl(var(--primary) / 0.08)' : 'transparent',
-                borderColor: selected.id === t.id ? 'hsl(var(--primary) / 0.3)' : 'hsl(var(--border) / 0.3)',
-              }}
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="w-3 h-8 rounded-sm shrink-0" style={{ background: t.preview }} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-foreground">{t.name}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug truncate">{t.description}</p>
-                  <div className="flex gap-1 mt-1">
-                    <span className="text-[8px] uppercase tracking-widest px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{t.category}</span>
-                    {hrTemplates.includes(t.id) && t.category !== "generic" && (
-                      <span className="text-[8px] px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-500">HR Pick</span>
-                    )}
-                    {fresherTemplates.includes(t.id) && (
-                      <span className="text-[8px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500">Freshers</span>
-                    )}
+          {filtered.map((t, i) => {
+            const isSelected = selected.id === t.id;
+            return (
+              <motion.div
+                key={t.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: Math.min(i * 0.02, 0.5) }}
+                className={`rounded-lg border transition-all ${isSelected ? "border-primary/40 bg-primary/5" : "border-border/30 hover:border-border/60"}`}
+              >
+                <button
+                  onClick={() => onSelect(t)}
+                  className="w-full text-left p-3"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-3 h-8 rounded-sm shrink-0" style={{ background: t.preview }} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs font-medium text-foreground">{t.name}</p>
+                        {isSelected && <Check size={12} className="text-primary shrink-0" />}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug truncate">{t.description}</p>
+                      <span className="text-[8px] uppercase tracking-widest px-1.5 py-0.5 rounded bg-muted text-muted-foreground mt-1 inline-block">{t.category}</span>
+                    </div>
                   </div>
-                </div>
-              </div>
-            </motion.button>
-          ))}
+                </button>
+                {isSelected && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    className="px-3 pb-3"
+                  >
+                    <div className="flex items-center gap-1.5 text-[10px] text-primary font-medium">
+                      <Check size={10} /> Currently applied
+                    </div>
+                  </motion.div>
+                )}
+              </motion.div>
+            );
+          })}
         </div>
       </ScrollArea>
     </div>

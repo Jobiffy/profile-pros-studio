@@ -6,6 +6,87 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const resumeToolSchema = {
+  type: "function",
+  function: {
+    name: "parsed_resume",
+    description: "Return the parsed/optimized resume data",
+    parameters: {
+      type: "object",
+      properties: {
+        header: {
+          type: "object",
+          properties: {
+            name: { type: "string" }, title: { type: "string" }, email: { type: "string" },
+            phone: { type: "string" }, linkedin: { type: "string" }, github: { type: "string" },
+            location: { type: "string" }, website: { type: "string" },
+          },
+          required: ["name", "title", "email", "phone"]
+        },
+        summary: { type: "string" },
+        experience: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              title: { type: "string" }, company: { type: "string" }, location: { type: "string" },
+              startDate: { type: "string" }, endDate: { type: "string" },
+              bullets: { type: "array", items: { type: "string" } }
+            },
+            required: ["title", "company", "location", "startDate", "endDate", "bullets"]
+          }
+        },
+        education: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              degree: { type: "string" }, school: { type: "string" }, location: { type: "string" },
+              startDate: { type: "string" }, endDate: { type: "string" }, gpa: { type: "string" }
+            },
+            required: ["degree", "school", "location", "startDate", "endDate"]
+          }
+        },
+        skills: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              category: { type: "string" },
+              items: { type: "array", items: { type: "string" } }
+            },
+            required: ["category", "items"]
+          }
+        },
+        projects: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              name: { type: "string" }, description: { type: "string" },
+              tech: { type: "string" }, bullets: { type: "array", items: { type: "string" } }
+            },
+            required: ["name", "description", "bullets"]
+          }
+        },
+        certifications: { type: "array", items: { type: "string" } },
+        leadership: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              role: { type: "string" }, org: { type: "string" },
+              date: { type: "string" }, bullets: { type: "array", items: { type: "string" } }
+            },
+            required: ["role", "org", "date", "bullets"]
+          }
+        }
+      },
+      required: ["header", "summary", "experience", "education", "skills"]
+    }
+  }
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -24,17 +105,12 @@ serve(async (req) => {
     let toolChoice: any = undefined;
 
     if (action === "fetch-jd") {
-      // Fetch job description from a URL
       if (!url) throw new Error("URL is required");
-
-      // Fetch the page content
       const pageResp = await fetch(url, {
         headers: { "User-Agent": "Mozilla/5.0 (compatible; Jobiffy/1.0)" },
       });
       if (!pageResp.ok) throw new Error(`Failed to fetch URL: ${pageResp.status}`);
       const html = await pageResp.text();
-
-      // Strip HTML tags to get text
       const textContent = html
         .replace(/<script[\s\S]*?<\/script>/gi, "")
         .replace(/<style[\s\S]*?<\/style>/gi, "")
@@ -43,7 +119,6 @@ serve(async (req) => {
         .trim()
         .slice(0, 15000);
 
-      // Use AI to extract the job description
       const extractResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -61,120 +136,38 @@ serve(async (req) => {
 
       if (!extractResp.ok) throw new Error("Failed to extract job description");
       const extractData = await extractResp.json();
-      const jobDescription = extractData.choices?.[0]?.message?.content || "";
-
-      return new Response(JSON.stringify({ jobDescription }), {
+      const jdText = extractData.choices?.[0]?.message?.content || "";
+      return new Response(JSON.stringify({ jobDescription: jdText }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     if (action === "parse-resume") {
-      // Parse raw text into structured resume data
       if (!rawText) throw new Error("Raw text is required for parsing");
       useTools = true;
-      systemPrompt = `You are an expert resume parser. Extract all information from the raw resume text and structure it precisely. Be thorough — extract every section, every bullet point, every detail. If a section doesn't exist, return an empty array or omit it. For skills, group them into logical categories. Ensure dates, locations, and details are captured exactly as written.`;
-      userPrompt = `Parse the following resume text into structured data. Extract EVERYTHING — don't skip any content:\n\n${rawText}`;
-      tools = [{
-        type: "function",
-        function: {
-          name: "parsed_resume",
-          description: "Return the parsed resume data",
-          parameters: {
-            type: "object",
-            properties: {
-              header: {
-                type: "object",
-                properties: {
-                  name: { type: "string" },
-                  title: { type: "string" },
-                  email: { type: "string" },
-                  phone: { type: "string" },
-                  linkedin: { type: "string" },
-                  github: { type: "string" },
-                  location: { type: "string" },
-                  website: { type: "string" },
-                },
-                required: ["name", "title", "email", "phone"]
-              },
-              summary: { type: "string" },
-              experience: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    title: { type: "string" },
-                    company: { type: "string" },
-                    location: { type: "string" },
-                    startDate: { type: "string" },
-                    endDate: { type: "string" },
-                    bullets: { type: "array", items: { type: "string" } }
-                  },
-                  required: ["title", "company", "location", "startDate", "endDate", "bullets"]
-                }
-              },
-              education: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    degree: { type: "string" },
-                    school: { type: "string" },
-                    location: { type: "string" },
-                    startDate: { type: "string" },
-                    endDate: { type: "string" },
-                    gpa: { type: "string" }
-                  },
-                  required: ["degree", "school", "location", "startDate", "endDate"]
-                }
-              },
-              skills: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    category: { type: "string" },
-                    items: { type: "array", items: { type: "string" } }
-                  },
-                  required: ["category", "items"]
-                }
-              },
-              projects: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    name: { type: "string" },
-                    description: { type: "string" },
-                    tech: { type: "string" },
-                    bullets: { type: "array", items: { type: "string" } }
-                  },
-                  required: ["name", "description", "bullets"]
-                }
-              },
-              certifications: { type: "array", items: { type: "string" } },
-              leadership: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    role: { type: "string" },
-                    org: { type: "string" },
-                    date: { type: "string" },
-                    bullets: { type: "array", items: { type: "string" } }
-                  },
-                  required: ["role", "org", "date", "bullets"]
-                }
-              }
-            },
-            required: ["header", "summary", "experience", "education", "skills"]
-          }
-        }
-      }];
+      systemPrompt = `You are an expert resume parser. Extract all information from the raw resume text and structure it precisely. Be thorough — extract every section, every bullet point, every detail.`;
+      userPrompt = `Parse the following resume text into structured data. Extract EVERYTHING:\n\n${rawText}`;
+      tools = [resumeToolSchema];
+      toolChoice = { type: "function", function: { name: "parsed_resume" } };
+
+    } else if (action === "tailor-resume") {
+      if (!jobDescription) throw new Error("Job description is required");
+      useTools = true;
+      systemPrompt = `You are an expert resume optimizer. Given a resume and a job description, optimize the resume to maximize the match with the job. Rules:
+1. Keep the same person's real experience — do NOT fabricate roles, companies, or degrees.
+2. Rewrite bullet points to emphasize relevant skills and use keywords from the JD.
+3. Reorder skills to prioritize those mentioned in the JD.
+4. Enhance the summary to align with the target role.
+5. Add missing keywords naturally where truthful.
+6. Keep the same structure (header, experience, education, skills, etc.)
+7. Make bullet points more quantified and impactful where possible.`;
+      userPrompt = `Optimize this resume to match the following job description.\n\nCurrent Resume:\n${resumeText}\n\nJob Description:\n${jobDescription}\n\nReturn the optimized resume data.`;
+      tools = [resumeToolSchema];
       toolChoice = { type: "function", function: { name: "parsed_resume" } };
 
     } else if (action === "ats-score") {
       useTools = true;
-      systemPrompt = `You are an expert ATS (Applicant Tracking System) analyzer. Analyze the resume and provide a detailed ATS compatibility score. Consider formatting, keyword optimization, section organization, quantified achievements, and overall readability.`;
+      systemPrompt = `You are an expert ATS (Applicant Tracking System) analyzer. Analyze the resume and provide a detailed ATS compatibility score.`;
       userPrompt = `Analyze this resume for ATS compatibility:\n\n${resumeText}`;
       tools = [{
         type: "function",
@@ -190,10 +183,8 @@ serve(async (req) => {
                 items: {
                   type: "object",
                   properties: {
-                    name: { type: "string" },
-                    score: { type: "number" },
-                    feedback: { type: "string" },
-                    suggestions: { type: "array", items: { type: "string" } }
+                    name: { type: "string" }, score: { type: "number" },
+                    feedback: { type: "string" }, suggestions: { type: "array", items: { type: "string" } }
                   },
                   required: ["name", "score", "feedback", "suggestions"]
                 }
@@ -212,7 +203,7 @@ serve(async (req) => {
       if (!jobDescription) throw new Error("Job description is required");
       useTools = true;
       systemPrompt = `You are an expert resume-job description matching analyst. Compare the resume against the job description and provide a detailed match analysis.`;
-      userPrompt = `Resume:\n${resumeText}\n\nJob Description:\n${jobDescription}\n\nAnalyze the match between this resume and job description.`;
+      userPrompt = `Resume:\n${resumeText}\n\nJob Description:\n${jobDescription}\n\nAnalyze the match.`;
       tools = [{
         type: "function",
         function: {
@@ -221,7 +212,7 @@ serve(async (req) => {
           parameters: {
             type: "object",
             properties: {
-              matchScore: { type: "number", description: "Match percentage 0-100" },
+              matchScore: { type: "number" },
               matchedKeywords: { type: "array", items: { type: "string" } },
               missingKeywords: { type: "array", items: { type: "string" } },
               experienceMatch: { type: "string" },
@@ -231,11 +222,7 @@ serve(async (req) => {
                 type: "array",
                 items: {
                   type: "object",
-                  properties: {
-                    section: { type: "string" },
-                    score: { type: "number" },
-                    feedback: { type: "string" }
-                  },
+                  properties: { section: { type: "string" }, score: { type: "number" }, feedback: { type: "string" } },
                   required: ["section", "score", "feedback"]
                 }
               }
@@ -258,15 +245,7 @@ When you need to suggest resume modifications, wrap them in a JSON code block li
 }
 \`\`\`
 
-Or for array fields like experience bullets:
-\`\`\`json:resume-update
-{
-  "field": "experience[0].bullets",
-  "value": ["bullet 1", "bullet 2", "bullet 3"]
-}
-\`\`\`
-
-Be conversational, helpful, and proactive. Suggest improvements even if not asked. When making changes, ALWAYS include the resume-update JSON block so changes are applied automatically.`;
+Be conversational, helpful, and proactive. When making changes, ALWAYS include the resume-update JSON block so changes are applied automatically.`;
       userPrompt = "";
 
     } else {
