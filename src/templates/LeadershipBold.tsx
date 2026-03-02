@@ -4,8 +4,8 @@ import { ResumeData } from "@/types/resume";
 export const LeadershipBold = ({ data }: { data: ResumeData }) => (
   <div className="font-source p-8 text-[11px]" style={{ color: '#1a1a1a' }}>
     <div className="mb-6">
-      <h1 className="text-3xl font-bold" style={{ color: '#8B0000' }}>{data.header.name}</h1>
-      <div className="h-1 w-20 mt-1 rounded" style={{ background: '#8B0000' }} />
+      <h1 className="text-3xl font-bold" style={{ color: 'var(--resume-accent, #8B0000)' }}>{data.header.name}</h1>
+      <div className="h-1 w-20 mt-1 rounded" style={{ background: 'var(--resume-accent, #8B0000)' }} />
       <p className="mt-2 text-xs" style={{ color: '#666' }}>{data.header.title}</p>
       <div className="flex gap-4 mt-1 text-[10px]" style={{ color: '#888' }}>
         <span>{data.header.email}</span><span>{data.header.phone}</span>
@@ -13,7 +13,7 @@ export const LeadershipBold = ({ data }: { data: ResumeData }) => (
       </div>
     </div>
 
-    <div className="p-3 rounded-sm mb-5" style={{ background: '#fdf5f5', borderLeft: '3px solid #8B0000' }}>
+    <div className="p-3 rounded-sm mb-5" style={{ background: 'var(--resume-accent-light, #fdf5f5)', borderLeft: `3px solid var(--resume-accent, #8B0000)` }}>
       <p className="text-[10.5px] leading-relaxed">{data.summary}</p>
     </div>
 
@@ -22,10 +22,10 @@ export const LeadershipBold = ({ data }: { data: ResumeData }) => (
       <div className="absolute left-2 top-0 bottom-0 w-px" style={{ background: '#ddd' }} />
       {data.experience.map((exp, i) => (
         <div key={i} className="mb-5 relative">
-          <div className="absolute -left-[18px] top-1 w-2.5 h-2.5 rounded-full border-2" style={{ borderColor: '#8B0000', background: i === 0 ? '#8B0000' : '#fff' }} />
+          <div className="absolute -left-[18px] top-1 w-2.5 h-2.5 rounded-full border-2" style={{ borderColor: 'var(--resume-accent, #8B0000)', background: i === 0 ? 'var(--resume-accent, #8B0000)' : '#fff' }} />
           <div className="flex justify-between">
             <h3 className="font-bold text-xs">{exp.title}</h3>
-            <span className="text-[10px] font-semibold" style={{ color: '#8B0000' }}>{exp.startDate} – {exp.endDate}</span>
+            <span className="text-[10px] font-semibold" style={{ color: 'var(--resume-accent, #8B0000)' }}>{exp.startDate} – {exp.endDate}</span>
           </div>
           <p className="text-[10px] mb-1" style={{ color: '#777' }}>{exp.company} • {exp.location}</p>
           <ul className="list-disc ml-4 space-y-0.5">
@@ -64,9 +64,22 @@ export const LeadershipBold = ({ data }: { data: ResumeData }) => (
         ))}
       </>
     )}
+
+    {(data.customSections || []).map((sec, i) => (
+      <div key={i}>
+        <SectionTitle>{sec.title}</SectionTitle>
+        {sec.items.map((item, j) => (
+          <div key={j} className="mb-2">
+            {item.subtitle && <p className="font-bold">{item.subtitle}</p>}
+            {item.description && <p>{item.description}</p>}
+            {item.bullets?.map((b, k) => <li key={k} className="list-disc ml-4">{b}</li>)}
+          </div>
+        ))}
+      </div>
+    ))}
   </div>
 );
 
 const SectionTitle = ({ children }: { children: React.ReactNode }) => (
-  <h2 className="text-sm font-bold uppercase tracking-wider mb-2 mt-4" style={{ color: '#8B0000' }}>{children}</h2>
+  <h2 className="text-sm font-bold uppercase tracking-wider mb-2 mt-4" style={{ color: 'var(--resume-accent, #8B0000)' }}>{children}</h2>
 );

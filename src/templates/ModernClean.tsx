@@ -25,7 +25,7 @@ export const ModernClean = ({ data }: { data: ResumeData }) => (
             <span className="text-[10px]" style={{ color: '#bbb' }}>{exp.startDate} – {exp.endDate}</span>
           </div>
           <ul className="mt-2 space-y-1">
-            {exp.bullets.map((b, j) => <li key={j} className="pl-3" style={{ borderLeft: '1px solid #e0e0e0' }}>{b}</li>)}
+            {exp.bullets.map((b, j) => <li key={j} className="pl-3" style={{ borderLeft: `1px solid var(--resume-accent-light, #e0e0e0)` }}>{b}</li>)}
           </ul>
         </div>
       ))}
@@ -46,16 +46,28 @@ export const ModernClean = ({ data }: { data: ResumeData }) => (
     <MSection title="Skills">
       <div className="flex flex-wrap gap-2">
         {data.skills.flatMap(s => s.items).map((item, i) => (
-          <span key={i} className="px-3 py-1 rounded-full text-[10px]" style={{ background: '#f5f5f5' }}>{item}</span>
+          <span key={i} className="px-3 py-1 rounded-full text-[10px]" style={{ background: 'var(--resume-accent-light, #f5f5f5)' }}>{item}</span>
         ))}
       </div>
     </MSection>
+
+    {(data.customSections || []).map((sec, i) => (
+      <MSection key={i} title={sec.title}>
+        {sec.items.map((item, j) => (
+          <div key={j} className="mb-3">
+            {item.subtitle && <p className="font-semibold">{item.subtitle}</p>}
+            {item.description && <p className="text-[10px]" style={{ color: '#999' }}>{item.description}</p>}
+            {item.bullets?.map((b, k) => <li key={k} className="pl-3" style={{ borderLeft: `1px solid var(--resume-accent-light, #e0e0e0)` }}>{b}</li>)}
+          </div>
+        ))}
+      </MSection>
+    ))}
   </div>
 );
 
 const MSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <div className="mb-6">
-    <h2 className="text-[10px] uppercase tracking-[0.25em] mb-3" style={{ color: '#bbb' }}>{title}</h2>
+    <h2 className="text-[10px] uppercase tracking-[0.25em] mb-3" style={{ color: 'var(--resume-accent, #bbb)' }}>{title}</h2>
     {children}
   </div>
 );

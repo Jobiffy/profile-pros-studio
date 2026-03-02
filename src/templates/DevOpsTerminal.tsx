@@ -6,7 +6,7 @@ export const DevOpsTerminal = ({ data }: { data: ResumeData }) => (
     <div className="mb-4 p-3 rounded" style={{ background: '#1a1a1a', border: '1px solid #333' }}>
       <p style={{ color: '#888' }}>user@resume:~$ whoami</p>
       <h1 className="text-lg font-bold text-white">{data.header.name}</h1>
-      <p style={{ color: '#ffcc00' }}>{data.header.title}</p>
+      <p style={{ color: 'var(--resume-accent, #ffcc00)' }}>{data.header.title}</p>
       <p className="mt-1" style={{ color: '#888' }}>
         {data.header.email} | {data.header.phone}{data.header.linkedin && ` | ${data.header.linkedin}`}
       </p>
@@ -56,6 +56,19 @@ export const DevOpsTerminal = ({ data }: { data: ResumeData }) => (
         {data.certifications.map((c, i) => <p key={i} className="pl-2" style={{ color: '#33ff33' }}>[✓] {c}</p>)}
       </>
     )}
+
+    {(data.customSections || []).map((sec, i) => (
+      <div key={i}>
+        <Cmd cmd={`cat ${sec.title.toLowerCase().replace(/\s+/g, '-')}.txt`} />
+        {sec.items.map((item, j) => (
+          <div key={j} className="pl-2 mb-1">
+            {item.subtitle && <p style={{ color: '#ffcc00' }}>{item.subtitle}</p>}
+            {item.description && <p style={{ color: '#ccc' }}>{item.description}</p>}
+            {item.bullets?.map((b, k) => <p key={k} className="pl-2" style={{ color: '#aaa' }}>├── {b}</p>)}
+          </div>
+        ))}
+      </div>
+    ))}
 
     <p className="mt-4" style={{ color: '#888' }}>user@resume:~$ <span className="animate-pulse">█</span></p>
   </div>

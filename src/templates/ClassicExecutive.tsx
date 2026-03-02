@@ -14,7 +14,7 @@ export const ClassicExecutive = ({ data }: { data: ResumeData }) => (
       </div>
     </div>
 
-    <div className="border-t-2 border-b-2 py-3 mb-5" style={{ borderColor: '#1a1a1a' }}>
+    <div className="border-t-2 border-b-2 py-3 mb-5" style={{ borderColor: 'var(--resume-accent, #1a1a1a)' }}>
       <p className="italic text-center">{data.summary}</p>
     </div>
 
@@ -70,12 +70,24 @@ export const ClassicExecutive = ({ data }: { data: ResumeData }) => (
         </ul>
       </Section>
     )}
+
+    {(data.customSections || []).map((sec, i) => (
+      <Section key={i} title={sec.title.toUpperCase()}>
+        {sec.items.map((item, j) => (
+          <div key={j} className="mb-2">
+            {item.subtitle && <p className="font-bold">{item.subtitle}</p>}
+            {item.description && <p>{item.description}</p>}
+            {item.bullets?.map((b, k) => <li key={k} className="ml-5 list-disc">{b}</li>)}
+          </div>
+        ))}
+      </Section>
+    ))}
   </div>
 );
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <div className="mb-5">
-    <h2 className="font-playfair text-sm font-bold tracking-widest uppercase mb-2 pb-1" style={{ borderBottom: '1px solid #999' }}>{title}</h2>
+    <h2 className="font-playfair text-sm font-bold tracking-widest uppercase mb-2 pb-1" style={{ borderBottom: '1px solid var(--resume-accent, #999)' }}>{title}</h2>
     {children}
   </div>
 );

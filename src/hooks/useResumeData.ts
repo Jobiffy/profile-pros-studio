@@ -176,9 +176,22 @@ export function useResumeData() {
     });
   }, []);
 
+  const addCustomSection = useCallback(() => {
+    setResumeData(prev => ({
+      ...prev,
+      customSections: [...(prev.customSections || []), { title: "New Section", items: [{ subtitle: "", description: "", bullets: [""] }] }],
+    }));
+  }, []);
+
+  const removeCustomSection = useCallback((index: number) => {
+    setResumeData(prev => ({
+      ...prev,
+      customSections: (prev.customSections || []).filter((_, i) => i !== index),
+    }));
+  }, []);
+
   const applyCustomColor = useCallback((hex: string) => {
     setCustomColor(hex);
-    // Generate light and dark versions
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
     const b = parseInt(hex.slice(5, 7), 16);
@@ -207,6 +220,7 @@ export function useResumeData() {
     addCertification, removeCertification,
     addLeadership, removeLeadership,
     addBullet, removeBullet,
+    addCustomSection, removeCustomSection,
     // Color
     colorPalette, setColorPalette,
     customColor, applyCustomColor,
