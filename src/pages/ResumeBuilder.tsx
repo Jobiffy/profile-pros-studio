@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { templateList, templateComponents } from "@/templates";
 import { TemplateInfo } from "@/types/resume";
@@ -70,6 +70,28 @@ const ResumeBuilder = () => {
   } = useResumeAI(resumeData);
 
   const TemplateComponent = templateComponents[selectedTemplate.id];
+
+  // Build reordered resume data based on sectionOrder so ALL templates reflect the order
+  const orderedResumeData = React.useMemo(() => {
+    const visibilityMap = new Map(sectionItems.map(s => [s.id, s.visible]));
+    const data = { ...resumeData };
+
+    // Hide sections that are toggled off
+    if (visibilityMap.get("summary") === false) data.summary = "";
+    if (visibilityMap.get("experience") === false) data.experience = [];
+    if (visibilityMap.get("education") === false) data.education = [];
+    if (visibilityMap.get("skills") === false) data.skills = [];
+    if (visibilityMap.get("projects") === false) data.projects = [];
+    if (visibilityMap.get("certifications") === false) data.certifications = [];
+    if (visibilityMap.get("leadership") === false) data.leadership = [];
+
+    // Filter out hidden custom sections
+    if (data.customSections) {
+      data.customSections = data.customSections.filter((_, i) => visibilityMap.get(`custom_${i}`) !== false);
+    }
+
+    return data;
+  }, [resumeData, sectionItems]);
 
   useEffect(() => {
     const visited = localStorage.getItem("jobiffy-onboarded");
@@ -319,7 +341,7 @@ const ResumeBuilder = () => {
               }}
             >
               <TemplateComponent
-                data={resumeData}
+                data={orderedResumeData}
                 sectionOrder={sectionItems.map(s => ({ id: s.id, visible: s.visible }))}
                 changedFields={changedFields}
                 showChanges={showChanges}
