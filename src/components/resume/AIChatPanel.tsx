@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChatMessage } from "@/hooks/useResumeAI";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageSquare, Send, Loader2, Bot, User, Sparkles, Zap, Mic, MicOff } from "lucide-react";
+import { Send, Loader2, Bot, User, Sparkles, Zap, Mic, MicOff, CheckCircle2, ArrowUpRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 interface Props {
@@ -12,12 +12,14 @@ interface Props {
 }
 
 const suggestions = [
-  { text: "Make my summary more impactful", emoji: "✨" },
-  { text: "Add stronger action verbs to my experience", emoji: "💪" },
-  { text: "Tailor my resume for a Product Manager role", emoji: "🎯" },
-  { text: "Improve my bullet points with metrics", emoji: "📊" },
-  { text: "Optimize for ATS systems", emoji: "🤖" },
-  { text: "Make my skills section stand out", emoji: "⭐" },
+  { text: "Make my summary more impactful with metrics", emoji: "✨" },
+  { text: "Add stronger action verbs to my first experience", emoji: "💪" },
+  { text: "Move skills section above experience", emoji: "🔀" },
+  { text: "Improve all bullet points with quantified results", emoji: "📊" },
+  { text: "Hide the leadership section", emoji: "🙈" },
+  { text: "Add a new project about my open source work", emoji: "➕" },
+  { text: "Rewrite my summary for a Senior PM role", emoji: "🎯" },
+  { text: "Add 'Python, Docker, Kubernetes' to my skills", emoji: "⭐" },
 ];
 
 export function AIChatPanel({ messages, loading, onSend }: Props) {
@@ -37,32 +39,23 @@ export function AIChatPanel({ messages, loading, onSend }: Props) {
   };
 
   const toggleVoice = () => {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      return;
-    }
-
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) return;
     if (isListening) {
       recognitionRef.current?.stop();
       setIsListening(false);
       return;
     }
-
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
     recognition.continuous = false;
     recognition.interimResults = true;
     recognition.lang = "en-US";
-
     recognition.onresult = (event: any) => {
-      const transcript = Array.from(event.results)
-        .map((result: any) => result[0].transcript)
-        .join("");
+      const transcript = Array.from(event.results).map((result: any) => result[0].transcript).join("");
       setInput(transcript);
     };
-
     recognition.onend = () => setIsListening(false);
     recognition.onerror = () => setIsListening(false);
-
     recognitionRef.current = recognition;
     recognition.start();
     setIsListening(true);
@@ -80,7 +73,7 @@ export function AIChatPanel({ messages, loading, onSend }: Props) {
           </div>
           <div>
             <h3 className="text-sm font-semibold text-foreground">AI Resume Coach</h3>
-            <p className="text-[10px] text-muted-foreground">Your personal resume improvement assistant</p>
+            <p className="text-[10px] text-muted-foreground">Edit, reorder, improve — just ask</p>
           </div>
         </div>
       </div>
@@ -89,7 +82,6 @@ export function AIChatPanel({ messages, loading, onSend }: Props) {
         <div className="p-4 space-y-3">
           {messages.length === 0 && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
-              {/* Hero */}
               <div className="text-center py-4">
                 <motion.div
                   animate={{ scale: [1, 1.05, 1] }}
@@ -99,25 +91,36 @@ export function AIChatPanel({ messages, loading, onSend }: Props) {
                   <Zap size={28} className="text-violet-500" />
                 </motion.div>
                 <p className="text-sm font-semibold text-foreground">Hi! I'm your AI resume coach</p>
-                <p className="text-xs text-muted-foreground mt-1 max-w-[240px] mx-auto">
-                  I can rewrite sections, add metrics, tailor for specific roles, and make your resume stand out
+                <p className="text-xs text-muted-foreground mt-1 max-w-[260px] mx-auto">
+                  I can modify content, reorder sections, add/remove items, and optimize your resume — all changes appear instantly
                 </p>
+              </div>
+
+              {/* Capability pills */}
+              <div className="flex flex-wrap gap-1.5 justify-center px-2">
+                {["Edit Content", "Reorder Sections", "Add Items", "Hide Sections", "Improve Bullets"].map(cap => (
+                  <span key={cap} className="text-[9px] px-2 py-1 rounded-full bg-primary/8 text-primary border border-primary/15 font-medium">
+                    {cap}
+                  </span>
+                ))}
               </div>
 
               {/* Suggestions grid */}
               <div className="space-y-1.5">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium px-1">Quick prompts</p>
-                <div className="grid grid-cols-2 gap-1.5">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium px-1">Try these</p>
+                <div className="grid grid-cols-1 gap-1.5">
                   {suggestions.map((s, i) => (
                     <motion.button
                       key={i}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.15 + i * 0.06 }}
-                      onClick={() => { setInput(s.text); }}
-                      className="text-left p-2.5 rounded-lg text-[11px] text-foreground bg-muted/40 border border-border/30 hover:border-primary/30 hover:bg-primary/5 transition-all leading-snug"
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.15 + i * 0.04 }}
+                      onClick={() => onSend(s.text)}
+                      className="text-left p-2.5 rounded-lg text-[11px] text-foreground bg-muted/40 border border-border/30 hover:border-primary/30 hover:bg-primary/5 transition-all leading-snug flex items-center gap-2 group"
                     >
-                      <span className="mr-1">{s.emoji}</span> {s.text}
+                      <span>{s.emoji}</span>
+                      <span className="flex-1">{s.text}</span>
+                      <ArrowUpRight size={10} className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                     </motion.button>
                   ))}
                 </div>
@@ -144,8 +147,35 @@ export function AIChatPanel({ messages, loading, onSend }: Props) {
                     : "bg-muted/50 border border-border/40 text-foreground rounded-bl-sm"
                 }`}>
                   {msg.role === "assistant" ? (
-                    <div className="prose prose-xs max-w-none [&_p]:my-1 [&_ul]:my-1 [&_li]:my-0 [&_code]:text-[10px] [&_code]:bg-muted [&_code]:px-1 [&_code]:rounded">
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    <div>
+                      {/* Applied actions banner */}
+                      {msg.appliedActions && msg.appliedActions.length > 0 && (
+                        <div className="mb-2 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <CheckCircle2 size={12} className="text-emerald-500" />
+                            <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                              {msg.appliedActions.length} change{msg.appliedActions.length > 1 ? "s" : ""} applied
+                            </span>
+                          </div>
+                          <div className="space-y-0.5">
+                            {msg.appliedActions.map((action, j) => (
+                              <div key={j} className="text-[10px] text-emerald-700 dark:text-emerald-300">
+                                <ReactMarkdown
+                                  components={{
+                                    p: ({ children }) => <span>{children}</span>,
+                                    strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                                  }}
+                                >{action}</ReactMarkdown>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {msg.content && (
+                        <div className="prose prose-xs max-w-none [&_p]:my-1 [&_ul]:my-1 [&_li]:my-0 [&_code]:text-[10px] [&_code]:bg-muted [&_code]:px-1 [&_code]:rounded">
+                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        </div>
+                      )}
                     </div>
                   ) : msg.content}
                 </div>
@@ -163,10 +193,9 @@ export function AIChatPanel({ messages, loading, onSend }: Props) {
               <div className="w-6 h-6 rounded-lg bg-violet-500/10 flex items-center justify-center">
                 <Bot size={14} className="text-violet-500" />
               </div>
-              <div className="flex gap-1 px-3 py-2.5 rounded-xl bg-muted/50 border border-border/40">
-                <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0 }} className="w-1.5 h-1.5 rounded-full bg-violet-500" />
-                <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0.2 }} className="w-1.5 h-1.5 rounded-full bg-violet-500" />
-                <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0.4 }} className="w-1.5 h-1.5 rounded-full bg-violet-500" />
+              <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-muted/50 border border-border/40">
+                <Loader2 size={12} className="animate-spin text-violet-500" />
+                <span className="text-[10px] text-muted-foreground">Thinking & applying changes...</span>
               </div>
             </motion.div>
           )}
@@ -177,7 +206,6 @@ export function AIChatPanel({ messages, loading, onSend }: Props) {
       {/* Input area */}
       <div className="p-3 border-t border-border/50 bg-card/50">
         <div className="flex gap-1.5">
-          {/* Voice button */}
           {hasSpeech && (
             <motion.button
               whileTap={{ scale: 0.95 }}
@@ -196,7 +224,7 @@ export function AIChatPanel({ messages, loading, onSend }: Props) {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === "Enter" && !e.shiftKey && handleSend()}
-            placeholder={isListening ? "Listening..." : "Ask me to improve your resume..."}
+            placeholder={isListening ? "Listening..." : "e.g. 'Rewrite my summary for a PM role'"}
             className="flex-1 h-9 px-3 rounded-lg text-sm bg-muted/50 border border-border/50 focus:border-primary focus:outline-none text-foreground placeholder:text-muted-foreground"
           />
           <motion.button
