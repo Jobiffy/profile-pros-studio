@@ -21,7 +21,18 @@ export interface JDMatchResult {
   sectionFeedback: { section: string; score: number; feedback: string }[];
 }
 
-export type ChatMessage = { role: "user" | "assistant"; content: string };
+export interface ToolCallAction {
+  id: string;
+  name: string;
+  arguments: any;
+}
+
+export type ChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+  tool_calls?: ToolCallAction[];
+  appliedActions?: string[]; // human-readable descriptions of applied actions
+};
 
 export function useResumeAI(resumeData: ResumeData) {
   const [atsResult, setAtsResult] = useState<ATSResult | null>(null);
@@ -81,83 +92,93 @@ export function useResumeAI(resumeData: ResumeData) {
 
   const sendChatMessage = useCallback(async (
     userMessage: string,
-    onResumeUpdate?: (field: string, value: any) => void
+    handlers?: {
+      onUpdateField?: (field: string, value: any) => void;
+      onReorderSections?: (order: string[]) => void;
+      onToggleSection?: (sectionId: string, visible: boolean) => void;
+      onAddItem?: (section: string, item: any) => void;
+      onRemoveItem?: (section: string, index: number) => void;
+      onMarkChanged?: (field: string) => void;
+      onSetShowChanges?: (show: boolean) => void;
+    }
   ) => {
     const userMsg: ChatMessage = { role: "user", content: userMessage };
     setChatMessages(prev => [...prev, userMsg]);
     setChatLoading(true);
 
-    let assistantContent = "";
-    const allMessages = [...chatMessages, userMsg];
-
     try {
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/resume-ai`;
-      const resp = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          action: "chat",
-          resumeData,
-          messages: allMessages.map(m => ({ role: m.role, content: m.content })),
-        }),
+      const allMessages = [...chatMessages, userMsg].map(m => ({
+        role: m.role,
+        content: m.content,
+      }));
+
+      const { data, error } = await supabase.functions.invoke("resume-ai", {
+        body: { action: "chat", resumeData, messages: allMessages },
       });
 
-      if (!resp.ok) {
-        const errData = await resp.json().catch(() => ({}));
-        throw new Error(errData.error || "Chat request failed");
-      }
+      if (error) throw error;
 
-      const reader = resp.body!.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
+      const appliedActions: string[] = [];
+      const toolCalls: ToolCallAction[] = data.tool_calls || [];
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-
-        let newlineIdx: number;
-        while ((newlineIdx = buffer.indexOf("\n")) !== -1) {
-          let line = buffer.slice(0, newlineIdx);
-          buffer = buffer.slice(newlineIdx + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (line.startsWith(":") || line.trim() === "") continue;
-          if (!line.startsWith("data: ")) continue;
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") break;
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) {
-              assistantContent += content;
-              setChatMessages(prev => {
-                const last = prev[prev.length - 1];
-                if (last?.role === "assistant") {
-                  return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantContent } : m);
-                }
-                return [...prev, { role: "assistant", content: assistantContent }];
-              });
+      // Execute tool calls
+      for (const tc of toolCalls) {
+        const args = tc.arguments;
+        switch (tc.name) {
+          case "update_section": {
+            if (handlers?.onUpdateField) {
+              handlers.onUpdateField(args.field, args.value);
+              handlers?.onMarkChanged?.(args.field.split("[")[0].split(".")[0]);
+              appliedActions.push(`✏️ Updated **${args.field}**`);
             }
-          } catch { /* partial json */ }
+            break;
+          }
+          case "reorder_sections": {
+            if (handlers?.onReorderSections) {
+              handlers.onReorderSections(args.section_order);
+              appliedActions.push(`🔀 Reordered sections: ${args.section_order.join(" → ")}`);
+            }
+            break;
+          }
+          case "toggle_section": {
+            if (handlers?.onToggleSection) {
+              handlers.onToggleSection(args.section_id, args.visible);
+              appliedActions.push(`${args.visible ? "👁️ Showed" : "🙈 Hidden"} **${args.section_id}** section`);
+            }
+            break;
+          }
+          case "add_item": {
+            if (handlers?.onAddItem) {
+              handlers.onAddItem(args.section, args.item);
+              handlers?.onMarkChanged?.(args.section);
+              appliedActions.push(`➕ Added new item to **${args.section}**`);
+            }
+            break;
+          }
+          case "remove_item": {
+            if (handlers?.onRemoveItem) {
+              handlers.onRemoveItem(args.section, args.index);
+              handlers?.onMarkChanged?.(args.section);
+              appliedActions.push(`🗑️ Removed item ${args.index} from **${args.section}**`);
+            }
+            break;
+          }
         }
       }
 
-      // Parse resume updates from the response
-      if (onResumeUpdate && assistantContent) {
-        const updateRegex = /```json:resume-update\n([\s\S]*?)```/g;
-        let match;
-        while ((match = updateRegex.exec(assistantContent)) !== null) {
-          try {
-            const update = JSON.parse(match[1]);
-            if (update.field && update.value !== undefined) {
-              onResumeUpdate(update.field, update.value);
-            }
-          } catch { /* ignore parse errors */ }
-        }
+      // Show changes if any actions were applied
+      if (appliedActions.length > 0) {
+        handlers?.onSetShowChanges?.(true);
       }
+
+      const assistantMsg: ChatMessage = {
+        role: "assistant",
+        content: data.content || "",
+        tool_calls: toolCalls.length > 0 ? toolCalls : undefined,
+        appliedActions: appliedActions.length > 0 ? appliedActions : undefined,
+      };
+
+      setChatMessages(prev => [...prev, assistantMsg]);
 
     } catch (e: any) {
       toast({ title: "Chat Error", description: e.message, variant: "destructive" });

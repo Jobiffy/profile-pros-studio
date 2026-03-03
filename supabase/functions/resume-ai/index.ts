@@ -87,6 +87,111 @@ const resumeToolSchema = {
   }
 };
 
+// Chat tools for the AI assistant to modify the resume
+const chatTools = [
+  {
+    type: "function",
+    function: {
+      name: "update_section",
+      description: "Update a specific section or field of the resume. Use this when the user asks to modify, rewrite, improve, or change any part of their resume.",
+      parameters: {
+        type: "object",
+        properties: {
+          field: {
+            type: "string",
+            description: "The field path to update. Examples: 'summary', 'header.title', 'header.name', 'experience[0].bullets', 'experience[1].title', 'skills[0].items', 'education[0].degree', 'projects[0].description', 'certifications', 'leadership[0].bullets'"
+          },
+          value: {
+            description: "The new value. Can be a string, array of strings, or object depending on the field."
+          }
+        },
+        required: ["field", "value"],
+        additionalProperties: false
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "reorder_sections",
+      description: "Reorder resume sections. Use when user asks to move a section up/down or rearrange the order.",
+      parameters: {
+        type: "object",
+        properties: {
+          section_order: {
+            type: "array",
+            items: { type: "string" },
+            description: "Ordered list of section IDs. Available: summary, experience, education, skills, projects, certifications, leadership"
+          }
+        },
+        required: ["section_order"],
+        additionalProperties: false
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "toggle_section",
+      description: "Show or hide a resume section. Use when user asks to hide, show, remove, or add back a section.",
+      parameters: {
+        type: "object",
+        properties: {
+          section_id: {
+            type: "string",
+            description: "Section to toggle: summary, experience, education, skills, projects, certifications, leadership"
+          },
+          visible: { type: "boolean", description: "true to show, false to hide" }
+        },
+        required: ["section_id", "visible"],
+        additionalProperties: false
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "add_item",
+      description: "Add a new item to a section (new experience entry, education entry, skill category, project, certification, or bullet point).",
+      parameters: {
+        type: "object",
+        properties: {
+          section: {
+            type: "string",
+            enum: ["experience", "education", "skills", "projects", "certifications", "leadership"],
+            description: "Which section to add to"
+          },
+          item: {
+            description: "The item to add. For experience: {title, company, location, startDate, endDate, bullets}. For education: {degree, school, location, startDate, endDate}. For skills: {category, items}. For projects: {name, description, tech, bullets}. For certifications: a string. For leadership: {role, org, date, bullets}."
+          }
+        },
+        required: ["section", "item"],
+        additionalProperties: false
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "remove_item",
+      description: "Remove an item from a section by index.",
+      parameters: {
+        type: "object",
+        properties: {
+          section: {
+            type: "string",
+            enum: ["experience", "education", "skills", "projects", "certifications", "leadership"],
+            description: "Which section to remove from"
+          },
+          index: { type: "number", description: "Zero-based index of the item to remove" }
+        },
+        required: ["section", "index"],
+        additionalProperties: false
+      }
+    }
+  }
+];
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -234,33 +339,115 @@ serve(async (req) => {
       toolChoice = { type: "function", function: { name: "jd_match_analysis" } };
 
     } else if (action === "chat") {
-      useStream = true;
-      systemPrompt = `You are an AI resume assistant for Jobiffy. You help users improve their resumes. When the user asks to modify their resume, provide the updated content clearly.
+      // Non-streaming tool-calling chat
+      const sectionOrderInfo = resumeData?.sectionOrder
+        ? `\n\nCurrent section order: ${JSON.stringify(resumeData.sectionOrder)}`
+        : "";
 
-When you need to suggest resume modifications, wrap them in a JSON code block like this:
-\`\`\`json:resume-update
-{
-  "field": "summary",
-  "value": "new summary text"
-}
-\`\`\`
+      systemPrompt = `You are an expert AI resume coach for Jobiffy. You help users improve their resumes through conversation and direct modifications.
 
-Be conversational, helpful, and proactive. When making changes, ALWAYS include the resume-update JSON block so changes are applied automatically.`;
-      userPrompt = "";
+CAPABILITIES - You can:
+1. **Modify any section** — rewrite summaries, improve bullet points, update titles, add metrics
+2. **Reorder sections** — move sections up or down (e.g., put skills before experience)
+3. **Show/hide sections** — toggle sections on or off
+4. **Add new items** — add experience entries, skills, projects, certifications, etc.
+5. **Remove items** — remove specific entries from any section
+
+CURRENT RESUME DATA:
+${resumeText}${sectionOrderInfo}
+
+INSTRUCTIONS:
+- When the user asks to change something, USE THE TOOLS to make the changes directly. Don't just describe what to change.
+- You can call multiple tools at once for complex requests.
+- Always explain what you changed in your text response.
+- Be proactive — suggest improvements when you see opportunities.
+- Use strong action verbs, quantify achievements, and follow resume best practices.
+- For field paths, use dot notation: "header.title", "experience[0].bullets", "skills[1].items", etc.`;
+
+      const aiMessages: any[] = [{ role: "system", content: systemPrompt }];
+      if (messages) {
+        // Convert tool_calls messages to proper format for context
+        for (const m of messages) {
+          if (m.role === "assistant" && m.tool_calls) {
+            aiMessages.push({ role: "assistant", content: m.content || "", tool_calls: m.tool_calls });
+            // Add tool results
+            if (m.tool_results) {
+              for (const tr of m.tool_results) {
+                aiMessages.push({ role: "tool", tool_call_id: tr.tool_call_id, content: tr.content });
+              }
+            }
+          } else {
+            aiMessages.push({ role: m.role, content: m.content });
+          }
+        }
+      }
+
+      const body = {
+        model: "google/gemini-3-flash-preview",
+        messages: aiMessages,
+        tools: chatTools,
+      };
+
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          return new Response(JSON.stringify({ error: "Rate limited. Please try again shortly." }), {
+            status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (response.status === 402) {
+          return new Response(JSON.stringify({ error: "AI credits exhausted. Please add credits." }), {
+            status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const t = await response.text();
+        console.error("AI error:", response.status, t);
+        throw new Error("AI gateway error");
+      }
+
+      const data = await response.json();
+      const choice = data.choices?.[0];
+      const message = choice?.message;
+
+      // Return structured response with tool calls
+      const result: any = {
+        content: message?.content || "",
+        tool_calls: [],
+      };
+
+      if (message?.tool_calls) {
+        for (const tc of message.tool_calls) {
+          try {
+            const args = JSON.parse(tc.function.arguments);
+            result.tool_calls.push({
+              id: tc.id,
+              name: tc.function.name,
+              arguments: args,
+            });
+          } catch {
+            console.error("Failed to parse tool call:", tc);
+          }
+        }
+      }
+
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
 
     } else {
       throw new Error(`Unknown action: ${action}`);
     }
 
     const aiMessages: any[] = [{ role: "system", content: systemPrompt }];
-
-    if (action === "chat" && messages) {
-      aiMessages.push({ role: "user", content: `Here is my current resume data:\n${resumeText}` });
-      aiMessages.push({ role: "assistant", content: "I've reviewed your resume. How can I help you improve it?" });
-      aiMessages.push(...messages);
-    } else {
-      aiMessages.push({ role: "user", content: userPrompt });
-    }
+    aiMessages.push({ role: "user", content: userPrompt });
 
     const body: any = {
       model: "google/gemini-3-flash-preview",
@@ -341,41 +528,41 @@ function formatResumeForAI(data: any): string {
   if (data.summary) lines.push(`SUMMARY\n${data.summary}\n`);
   if (data.experience?.length) {
     lines.push("EXPERIENCE");
-    for (const exp of data.experience) {
-      lines.push(`${exp.title} at ${exp.company} (${exp.startDate}–${exp.endDate})`);
-      for (const b of exp.bullets || []) lines.push(`  • ${b}`);
+    for (const [i, exp] of data.experience.entries()) {
+      lines.push(`[${i}] ${exp.title} at ${exp.company} (${exp.startDate}–${exp.endDate})`);
+      for (const [j, b] of (exp.bullets || []).entries()) lines.push(`  [${j}] • ${b}`);
     }
     lines.push("");
   }
   if (data.education?.length) {
     lines.push("EDUCATION");
-    for (const edu of data.education) {
-      lines.push(`${edu.degree} – ${edu.school} (${edu.startDate}–${edu.endDate})${edu.gpa ? ` GPA: ${edu.gpa}` : ""}`);
+    for (const [i, edu] of data.education.entries()) {
+      lines.push(`[${i}] ${edu.degree} – ${edu.school} (${edu.startDate}–${edu.endDate})${edu.gpa ? ` GPA: ${edu.gpa}` : ""}`);
     }
     lines.push("");
   }
   if (data.skills?.length) {
     lines.push("SKILLS");
-    for (const s of data.skills) lines.push(`${s.category}: ${s.items.join(", ")}`);
+    for (const [i, s] of data.skills.entries()) lines.push(`[${i}] ${s.category}: ${s.items.join(", ")}`);
     lines.push("");
   }
   if (data.projects?.length) {
     lines.push("PROJECTS");
-    for (const p of data.projects) {
-      lines.push(`${p.name} – ${p.description}`);
-      for (const b of p.bullets || []) lines.push(`  • ${b}`);
+    for (const [i, p] of data.projects.entries()) {
+      lines.push(`[${i}] ${p.name} – ${p.description}`);
+      for (const [j, b] of (p.bullets || []).entries()) lines.push(`  [${j}] • ${b}`);
     }
     lines.push("");
   }
   if (data.certifications?.length) {
     lines.push("CERTIFICATIONS");
-    for (const c of data.certifications) lines.push(`  • ${c}`);
+    for (const [i, c] of data.certifications.entries()) lines.push(`[${i}] • ${c}`);
   }
   if (data.leadership?.length) {
     lines.push("LEADERSHIP");
-    for (const l of data.leadership) {
-      lines.push(`${l.role} at ${l.org} (${l.date})`);
-      for (const b of l.bullets || []) lines.push(`  • ${b}`);
+    for (const [i, l] of data.leadership.entries()) {
+      lines.push(`[${i}] ${l.role} at ${l.org} (${l.date})`);
+      for (const [j, b] of (l.bullets || []).entries()) lines.push(`  [${j}] • ${b}`);
     }
   }
   return lines.join("\n");

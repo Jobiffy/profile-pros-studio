@@ -126,12 +126,55 @@ const ResumeBuilder = () => {
     setRightPanel(prev => prev === panel ? "none" : panel);
   };
 
-  const handleChatSend = (msg: string) => {
-    sendChatMessage(msg, (field, value) => {
-      updateField(field, value);
-      markChanged(field);
+  const handleChatSend = useCallback((msg: string) => {
+    sendChatMessage(msg, {
+      onUpdateField: (field, value) => {
+        updateField(field, value);
+        markChanged(field.split("[")[0].split(".")[0]);
+      },
+      onReorderSections: (order: string[]) => {
+        setSectionItems(prev => {
+          const map = new Map(prev.map(s => [s.id, s]));
+          const reordered: typeof prev = [];
+          for (const id of order) {
+            const item = map.get(id);
+            if (item) reordered.push(item);
+          }
+          // Add remaining items not in the new order
+          for (const item of prev) {
+            if (!order.includes(item.id)) reordered.push(item);
+          }
+          return reordered;
+        });
+      },
+      onToggleSection: (sectionId: string, visible: boolean) => {
+        setSectionItems(prev => prev.map(s => s.id === sectionId ? { ...s, visible } : s));
+      },
+      onAddItem: (section: string, item: any) => {
+        setResumeData(prev => {
+          const next = JSON.parse(JSON.stringify(prev));
+          if (section === "experience") next.experience.push(item);
+          else if (section === "education") next.education.push(item);
+          else if (section === "skills") next.skills.push(item);
+          else if (section === "projects") (next.projects = next.projects || []).push(item);
+          else if (section === "certifications") (next.certifications = next.certifications || []).push(item);
+          else if (section === "leadership") (next.leadership = next.leadership || []).push(item);
+          return next;
+        });
+      },
+      onRemoveItem: (section: string, index: number) => {
+        setResumeData(prev => {
+          const next = JSON.parse(JSON.stringify(prev));
+          if (next[section] && Array.isArray(next[section])) {
+            next[section].splice(index, 1);
+          }
+          return next;
+        });
+      },
+      onMarkChanged: markChanged,
+      onSetShowChanges: setShowChanges,
     });
-  };
+  }, [sendChatMessage, updateField, markChanged, setResumeData, setShowChanges]);
 
   const handleImport = (data: any) => {
     setResumeData(data);
