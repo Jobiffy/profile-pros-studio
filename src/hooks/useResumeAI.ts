@@ -135,7 +135,8 @@ export function useResumeAI(resumeData: ResumeData) {
             if (handlers?.onUpdateField) {
               handlers.onUpdateField(args.field, args.value);
               const changeType = args.change_type || "content";
-              handlers?.onMarkChanged?.(args.field.split("[")[0].split(".")[0], changeType);
+              // Store the FULL field path for granular highlighting
+              handlers?.onMarkChanged?.(args.field, changeType);
               const typeLabels: Record<string, string> = { grammar: "📝", content: "✏️", keyword: "🔑", formatting: "🎨" };
               appliedActions.push(`${typeLabels[changeType] || "✏️"} Updated **${args.field}** (${changeType})`);
             }
