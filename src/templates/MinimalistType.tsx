@@ -1,9 +1,9 @@
 // Generic Template 4: Minimalist Type
 import React from "react";
 import { ResumeData } from "@/types/resume";
-import { renderOrderedSections, SectionOrderItem } from "./sectionRenderer";
+import { renderOrderedSections, SectionOrderItem, HighlightProps } from "./sectionRenderer";
 
-export const MinimalistType = ({ data, sectionOrder }: { data: ResumeData; sectionOrder?: SectionOrderItem[] }) => {
+export const MinimalistType = ({ data, sectionOrder, changedFields, showChanges }: { data: ResumeData; sectionOrder?: SectionOrderItem[] } & HighlightProps) => {
   const sectionMap: Record<string, () => React.ReactNode> = {
     summary: () => data.summary ? <p className="mb-10 leading-relaxed max-w-[85%]" style={{ color: '#777' }}>{data.summary}</p> : null,
     experience: () => (
@@ -108,7 +108,7 @@ export const MinimalistType = ({ data, sectionOrder }: { data: ResumeData; secti
           {data.header.linkedin && <span>{data.header.linkedin}</span>}
         </div>
       </div>
-      {renderOrderedSections(sectionOrder, sectionMap)}
+      {renderOrderedSections(sectionOrder, sectionMap, { changedFields, showChanges })}
     </div>
   );
 };

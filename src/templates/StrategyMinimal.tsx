@@ -1,9 +1,9 @@
 // MBA Template 3: Strategy Minimal
 import React from "react";
 import { ResumeData } from "@/types/resume";
-import { renderOrderedSections, SectionOrderItem } from "./sectionRenderer";
+import { renderOrderedSections, SectionOrderItem, HighlightProps } from "./sectionRenderer";
 
-export const StrategyMinimal = ({ data, sectionOrder }: { data: ResumeData; sectionOrder?: SectionOrderItem[] }) => {
+export const StrategyMinimal = ({ data, sectionOrder, changedFields, showChanges }: { data: ResumeData; sectionOrder?: SectionOrderItem[] } & HighlightProps) => {
   const sectionMap: Record<string, () => React.ReactNode> = {
     summary: () => data.summary ? <p className="mb-6 text-[10.5px] leading-relaxed" style={{ color: '#555' }}>{data.summary}</p> : null,
     experience: () => (
@@ -108,7 +108,7 @@ export const StrategyMinimal = ({ data, sectionOrder }: { data: ResumeData; sect
         {data.header.linkedin && <span>{data.header.linkedin}</span>}
       </div>
       <div className="space-y-5">
-        {renderOrderedSections(sectionOrder, sectionMap)}
+        {renderOrderedSections(sectionOrder, sectionMap, { changedFields, showChanges })}
       </div>
     </div>
   );

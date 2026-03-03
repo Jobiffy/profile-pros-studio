@@ -1,11 +1,11 @@
 // Generic Template 3: Professional Classic
 import React from "react";
 import { ResumeData } from "@/types/resume";
-import { renderOrderedSections, SectionOrderItem } from "./sectionRenderer";
+import { renderOrderedSections, SectionOrderItem, HighlightProps, HighlightWrap } from "./sectionRenderer";
 
 const sidebarSections = new Set(["skills", "certifications"]);
 
-export const ProfessionalClassic = ({ data, sectionOrder }: { data: ResumeData; sectionOrder?: SectionOrderItem[] }) => {
+export const ProfessionalClassic = ({ data, sectionOrder, changedFields, showChanges }: { data: ResumeData; sectionOrder?: SectionOrderItem[] } & HighlightProps) => {
   const sectionMap: Record<string, () => React.ReactNode> = {
     summary: () => data.summary ? (
       <p className="text-[10.5px] leading-relaxed mb-5 pb-4" style={{ color: '#555', borderBottom: '1px solid #e2e8f0' }}>{data.summary}</p>
@@ -110,13 +110,19 @@ export const ProfessionalClassic = ({ data, sectionOrder }: { data: ResumeData; 
         </PSide>
         {sideItems.map(s => {
           const fn = sectionMap[s.id];
-          return fn ? <React.Fragment key={s.id}>{fn()}</React.Fragment> : null;
+          if (!fn) return null;
+          const content = fn();
+          if (!content) return null;
+          return <HighlightWrap key={s.id} sectionId={s.id} changedFields={changedFields} showChanges={showChanges}>{content}</HighlightWrap>;
         })}
       </div>
       <div className="w-[68%] p-6">
         {mainItems.map(s => {
           const fn = sectionMap[s.id];
-          return fn ? <React.Fragment key={s.id}>{fn()}</React.Fragment> : null;
+          if (!fn) return null;
+          const content = fn();
+          if (!content) return null;
+          return <HighlightWrap key={s.id} sectionId={s.id} changedFields={changedFields} showChanges={showChanges}>{content}</HighlightWrap>;
         })}
       </div>
     </div>

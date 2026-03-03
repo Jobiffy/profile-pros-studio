@@ -1,9 +1,9 @@
 // Tech Template 1: Developer Code
 import React from "react";
 import { ResumeData } from "@/types/resume";
-import { renderOrderedSections, SectionOrderItem } from "./sectionRenderer";
+import { renderOrderedSections, SectionOrderItem, HighlightProps } from "./sectionRenderer";
 
-export const DeveloperCode = ({ data, sectionOrder }: { data: ResumeData; sectionOrder?: SectionOrderItem[] }) => {
+export const DeveloperCode = ({ data, sectionOrder, changedFields, showChanges }: { data: ResumeData; sectionOrder?: SectionOrderItem[] } & HighlightProps) => {
   const sectionMap: Record<string, () => React.ReactNode> = {
     summary: () => data.summary ? (
       <><Comment text="Summary" /><p className="mb-4 pl-4" style={{ color: '#a6e3a1' }}>"{data.summary}"</p></>
@@ -96,7 +96,7 @@ export const DeveloperCode = ({ data, sectionOrder }: { data: ResumeData; sectio
         </div>
         <p style={{ color: 'var(--resume-accent, #89b4fa)' }}>{'}'}</p>
       </div>
-      {renderOrderedSections(sectionOrder, sectionMap)}
+      {renderOrderedSections(sectionOrder, sectionMap, { changedFields, showChanges })}
       <p className="mt-4" style={{ color: '#6c7086' }}>{'// EOF'}</p>
     </div>
   );

@@ -1,9 +1,9 @@
 // Generic Template 5: Elegant Refined
 import React from "react";
 import { ResumeData } from "@/types/resume";
-import { renderOrderedSections, SectionOrderItem } from "./sectionRenderer";
+import { renderOrderedSections, SectionOrderItem, HighlightProps } from "./sectionRenderer";
 
-export const ElegantRefined = ({ data, sectionOrder }: { data: ResumeData; sectionOrder?: SectionOrderItem[] }) => {
+export const ElegantRefined = ({ data, sectionOrder, changedFields, showChanges }: { data: ResumeData; sectionOrder?: SectionOrderItem[] } & HighlightProps) => {
   const sectionMap: Record<string, () => React.ReactNode> = {
     summary: () => data.summary ? <p className="text-center italic mb-6 max-w-[90%] mx-auto leading-relaxed" style={{ color: '#555' }}>{data.summary}</p> : null,
     experience: () => (
@@ -114,7 +114,7 @@ export const ElegantRefined = ({ data, sectionOrder }: { data: ResumeData; secti
           {data.header.linkedin && <><span>✦</span><span>{data.header.linkedin}</span></>}
         </div>
       </div>
-      {renderOrderedSections(sectionOrder, sectionMap)}
+      {renderOrderedSections(sectionOrder, sectionMap, { changedFields, showChanges })}
     </div>
   );
 };

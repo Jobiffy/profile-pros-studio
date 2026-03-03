@@ -1,9 +1,9 @@
 // Tech Template 4: Data Science
 import React from "react";
 import { ResumeData } from "@/types/resume";
-import { renderOrderedSections, SectionOrderItem } from "./sectionRenderer";
+import { renderOrderedSections, SectionOrderItem, HighlightProps } from "./sectionRenderer";
 
-export const DataScience = ({ data, sectionOrder }: { data: ResumeData; sectionOrder?: SectionOrderItem[] }) => {
+export const DataScience = ({ data, sectionOrder, changedFields, showChanges }: { data: ResumeData; sectionOrder?: SectionOrderItem[] } & HighlightProps) => {
   const sectionMap: Record<string, () => React.ReactNode> = {
     summary: () => data.summary ? <p className="mb-4 text-center" style={{ color: '#444' }}>{data.summary}</p> : null,
     skills: () => (
@@ -103,7 +103,7 @@ export const DataScience = ({ data, sectionOrder }: { data: ResumeData; sectionO
           {[data.header.email, data.header.phone, data.header.linkedin].filter(Boolean).map((c, i) => <span key={i}>{c}</span>)}
         </div>
       </div>
-      {renderOrderedSections(sectionOrder, sectionMap)}
+      {renderOrderedSections(sectionOrder, sectionMap, { changedFields, showChanges })}
     </div>
   );
 };

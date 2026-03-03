@@ -1,9 +1,9 @@
 // Tech Template 5: DevOps Terminal
 import React from "react";
 import { ResumeData } from "@/types/resume";
-import { renderOrderedSections, SectionOrderItem } from "./sectionRenderer";
+import { renderOrderedSections, SectionOrderItem, HighlightProps } from "./sectionRenderer";
 
-export const DevOpsTerminal = ({ data, sectionOrder }: { data: ResumeData; sectionOrder?: SectionOrderItem[] }) => {
+export const DevOpsTerminal = ({ data, sectionOrder, changedFields, showChanges }: { data: ResumeData; sectionOrder?: SectionOrderItem[] } & HighlightProps) => {
   const sectionMap: Record<string, () => React.ReactNode> = {
     summary: () => data.summary ? (<><Cmd cmd="cat summary.txt" /><p className="mb-3 pl-2" style={{ color: '#ccc' }}>{data.summary}</p></>) : null,
     experience: () => (
@@ -91,7 +91,7 @@ export const DevOpsTerminal = ({ data, sectionOrder }: { data: ResumeData; secti
           {data.header.email} | {data.header.phone}{data.header.linkedin && ` | ${data.header.linkedin}`}
         </p>
       </div>
-      {renderOrderedSections(sectionOrder, sectionMap)}
+      {renderOrderedSections(sectionOrder, sectionMap, { changedFields, showChanges })}
       <p className="mt-4" style={{ color: '#888' }}>user@resume:~$ <span className="animate-pulse">█</span></p>
     </div>
   );

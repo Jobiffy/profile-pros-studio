@@ -1,9 +1,9 @@
 // MBA Template 2: Consulting Pro
 import React from "react";
 import { ResumeData } from "@/types/resume";
-import { renderOrderedSections, SectionOrderItem } from "./sectionRenderer";
+import { renderOrderedSections, SectionOrderItem, HighlightProps } from "./sectionRenderer";
 
-export const ConsultingPro = ({ data, sectionOrder }: { data: ResumeData; sectionOrder?: SectionOrderItem[] }) => {
+export const ConsultingPro = ({ data, sectionOrder, changedFields, showChanges }: { data: ResumeData; sectionOrder?: SectionOrderItem[] } & HighlightProps) => {
   const sectionMap: Record<string, () => React.ReactNode> = {
     summary: () => data.summary ? (
       <div className="mb-4 p-3 rounded" style={{ background: 'var(--resume-accent-light, #f4f7f5)' }}>
@@ -112,7 +112,7 @@ export const ConsultingPro = ({ data, sectionOrder }: { data: ResumeData; sectio
         </div>
       </div>
       <div className="h-[2px] mb-4" style={{ background: `linear-gradient(90deg, var(--resume-accent, #0B3D2E), var(--resume-accent-light, #1a7a5a), var(--resume-accent, #0B3D2E))` }} />
-      {renderOrderedSections(sectionOrder, sectionMap)}
+      {renderOrderedSections(sectionOrder, sectionMap, { changedFields, showChanges })}
     </div>
   );
 };
