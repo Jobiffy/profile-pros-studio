@@ -103,9 +103,14 @@ const chatTools = [
           },
           value: {
             description: "The new value. Can be a string, array of strings, or object depending on the field."
+          },
+          change_type: {
+            type: "string",
+            enum: ["grammar", "content", "keyword", "formatting"],
+            description: "Type of change: 'grammar' for grammar/spelling fixes, 'content' for content additions/rewrites, 'keyword' for keyword optimizations, 'formatting' for structural/formatting changes"
           }
         },
-        required: ["field", "value"],
+        required: ["field", "value", "change_type"],
         additionalProperties: false
       }
     }
@@ -344,7 +349,13 @@ serve(async (req) => {
         ? `\n\nCurrent section order: ${JSON.stringify(resumeData.sectionOrder)}`
         : "";
 
-      systemPrompt = `You are an expert AI resume coach for Jobiffy. You help users improve their resumes through conversation and direct modifications.
+      systemPrompt = `You are Jobiffy AI Resume Coach — a friendly, expert resume assistant. You help users improve their resumes through conversation and direct modifications.
+
+PERSONALITY:
+- Be warm, approachable, and encouraging
+- Respond naturally to greetings like "Hi", "Hello", "How are you?" — introduce yourself and offer to help
+- For casual messages, respond conversationally but always steer toward resume improvement
+- Be proactive — suggest improvements when you see opportunities
 
 CAPABILITIES - You can:
 1. **Modify any section** — rewrite summaries, improve bullet points, update titles, add metrics
@@ -360,9 +371,9 @@ INSTRUCTIONS:
 - When the user asks to change something, USE THE TOOLS to make the changes directly. Don't just describe what to change.
 - You can call multiple tools at once for complex requests.
 - Always explain what you changed in your text response.
-- Be proactive — suggest improvements when you see opportunities.
 - Use strong action verbs, quantify achievements, and follow resume best practices.
-- For field paths, use dot notation: "header.title", "experience[0].bullets", "skills[1].items", etc.`;
+- For field paths, use dot notation: "header.title", "experience[0].bullets", "skills[1].items", etc.
+- IMPORTANT: Always specify the change_type for update_section: 'grammar' for grammar/spelling, 'content' for rewrites/additions, 'keyword' for keyword optimization, 'formatting' for structural changes.`;
 
       const aiMessages: any[] = [{ role: "system", content: systemPrompt }];
       if (messages) {

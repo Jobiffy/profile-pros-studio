@@ -98,7 +98,7 @@ export function useResumeAI(resumeData: ResumeData) {
       onToggleSection?: (sectionId: string, visible: boolean) => void;
       onAddItem?: (section: string, item: any) => void;
       onRemoveItem?: (section: string, index: number) => void;
-      onMarkChanged?: (field: string) => void;
+      onMarkChanged?: (field: string, changeType?: string) => void;
       onSetShowChanges?: (show: boolean) => void;
     }
   ) => {
@@ -134,8 +134,10 @@ export function useResumeAI(resumeData: ResumeData) {
           case "update_section": {
             if (handlers?.onUpdateField) {
               handlers.onUpdateField(args.field, args.value);
-              handlers?.onMarkChanged?.(args.field.split("[")[0].split(".")[0]);
-              appliedActions.push(`✏️ Updated **${args.field}**`);
+              const changeType = args.change_type || "content";
+              handlers?.onMarkChanged?.(args.field.split("[")[0].split(".")[0], changeType);
+              const typeLabels: Record<string, string> = { grammar: "📝", content: "✏️", keyword: "🔑", formatting: "🎨" };
+              appliedActions.push(`${typeLabels[changeType] || "✏️"} Updated **${args.field}** (${changeType})`);
             }
             break;
           }

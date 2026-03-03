@@ -6,16 +6,16 @@ export function useResumeData() {
   const [resumeData, setResumeData] = useState<ResumeData>({ ...sampleResume });
   const [colorPalette, setColorPalette] = useState<ResumeColorPalette>(COLOR_PALETTES[0]);
   const [customColor, setCustomColor] = useState("#0B6E4F");
-  const [changedFields, setChangedFields] = useState<Set<string>>(new Set());
+  const [changedFields, setChangedFields] = useState<Map<string, string>>(new Map());
   const [showChanges, setShowChanges] = useState(false);
   const prevDataRef = useRef<string>(JSON.stringify(sampleResume));
 
-  const markChanged = useCallback((field: string) => {
-    setChangedFields(prev => new Set([...prev, field]));
+  const markChanged = useCallback((field: string, changeType: string = "content") => {
+    setChangedFields(prev => new Map([...prev, [field, changeType]]));
   }, []);
 
   const clearChanges = useCallback(() => {
-    setChangedFields(new Set());
+    setChangedFields(new Map());
   }, []);
 
   const updateField = useCallback((field: string, value: any) => {

@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChatMessage } from "@/hooks/useResumeAI";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
 import { Send, Loader2, Bot, User, Sparkles, Zap, Mic, MicOff, CheckCircle2, ArrowUpRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
@@ -26,11 +27,20 @@ export function AIChatPanel({ messages, loading, onSend }: Props) {
   const [input, setInput] = useState("");
   const [isListening, setIsListening] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    }
+  }, [input]);
 
   const handleSend = () => {
     if (!input.trim() || loading) return;
@@ -72,7 +82,7 @@ export function AIChatPanel({ messages, loading, onSend }: Props) {
             <Sparkles size={16} className="text-violet-500" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-foreground">AI Resume Coach</h3>
+            <h3 className="text-sm font-semibold text-foreground">Jobiffy AI Resume Coach</h3>
             <p className="text-[10px] text-muted-foreground">Edit, reorder, improve — just ask</p>
           </div>
         </div>
@@ -90,7 +100,7 @@ export function AIChatPanel({ messages, loading, onSend }: Props) {
                 >
                   <Zap size={28} className="text-violet-500" />
                 </motion.div>
-                <p className="text-sm font-semibold text-foreground">Hi! I'm your AI resume coach</p>
+                <p className="text-sm font-semibold text-foreground">Hi! I'm your Jobiffy AI Resume Coach</p>
                 <p className="text-xs text-muted-foreground mt-1 max-w-[260px] mx-auto">
                   I can modify content, reorder sections, add/remove items, and optimize your resume — all changes appear instantly
                 </p>
@@ -220,12 +230,19 @@ export function AIChatPanel({ messages, loading, onSend }: Props) {
               {isListening ? <MicOff size={14} /> : <Mic size={14} />}
             </motion.button>
           )}
-          <input
+          <textarea
+            ref={textareaRef}
             value={input}
             onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && !e.shiftKey && handleSend()}
+            onKeyDown={e => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
             placeholder={isListening ? "Listening..." : "e.g. 'Rewrite my summary for a PM role'"}
-            className="flex-1 h-9 px-3 rounded-lg text-sm bg-muted/50 border border-border/50 focus:border-primary focus:outline-none text-foreground placeholder:text-muted-foreground"
+            rows={1}
+            className="flex-1 min-h-[36px] max-h-[120px] px-3 py-2 rounded-lg text-sm bg-muted/50 border border-border/50 focus:border-primary focus:outline-none text-foreground placeholder:text-muted-foreground resize-none overflow-y-auto"
           />
           <motion.button
             whileTap={{ scale: 0.95 }}

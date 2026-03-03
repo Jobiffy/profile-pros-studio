@@ -130,7 +130,6 @@ const ResumeBuilder = () => {
     sendChatMessage(msg, {
       onUpdateField: (field, value) => {
         updateField(field, value);
-        markChanged(field.split("[")[0].split(".")[0]);
       },
       onReorderSections: (order: string[]) => {
         setSectionItems(prev => {
@@ -183,9 +182,8 @@ const ResumeBuilder = () => {
   const handleTailorResume = async (jd: string) => {
     const tailored = await tailorResume(jd);
     if (tailored) {
-      // Mark all fields as changed for highlighting
       const fields = ["summary", "experience", "education", "skills", "projects", "certifications", "leadership"];
-      fields.forEach(f => markChanged(f));
+      fields.forEach(f => markChanged(f, "keyword"));
       setResumeData(tailored);
       setShowChanges(true);
     }
@@ -345,7 +343,7 @@ const ResumeBuilder = () => {
             {[
               { icon: Target, label: "ATS Score", panel: "ats" as RightPanel },
               { icon: Briefcase, label: "JD Match", panel: "jd" as RightPanel },
-              { icon: MessageSquare, label: "AI Chat", panel: "chat" as RightPanel },
+              { icon: MessageSquare, label: "AI Coach", panel: "chat" as RightPanel },
             ].map(item => (
               <motion.button
                 key={item.panel}
@@ -451,8 +449,22 @@ const ResumeBuilder = () => {
               />
               {showChanges && changedFields.size > 0 && (
                 <div className="absolute inset-0 pointer-events-none">
-                  <div className="absolute top-2 right-2 px-2 py-1 rounded bg-amber-500 text-white text-[9px] font-medium shadow-lg pointer-events-auto">
-                    {changedFields.size} AI changes highlighted
+                  <div className="absolute top-2 right-2 flex flex-col gap-1 pointer-events-auto">
+                    <div className="px-2 py-1 rounded bg-foreground/80 text-background text-[9px] font-medium shadow-lg">
+                      {changedFields.size} AI changes highlighted
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {[...new Set(changedFields.values())].map(type => {
+                        const colors: Record<string, string> = {
+                          grammar: "bg-blue-400", content: "bg-amber-400", keyword: "bg-emerald-400", formatting: "bg-violet-400"
+                        };
+                        return (
+                          <span key={type} className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${colors[type] || "bg-amber-400"} text-white`}>
+                            {type.toUpperCase()}
+                          </span>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               )}

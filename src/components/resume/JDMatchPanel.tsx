@@ -71,7 +71,7 @@ export function JDMatchPanel({ result, loading, onMatch, onTailor, tailorLoading
             <Briefcase size={16} className="text-blue-500" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-foreground">JD Matcher</h3>
+            <h3 className="text-sm font-semibold text-foreground">Jobiffy JD Matcher</h3>
             <p className="text-[10px] text-muted-foreground">Match & tailor your resume to any job</p>
           </div>
         </div>

@@ -309,15 +309,25 @@ function MinimalLayout({ data, config }: { data: ResumeData; config: TemplateSty
 // ══════════════════════════════════════════
 // ── Highlight wrapper ──
 function HighlightWrap({ sectionId, changedFields, showChanges, children }: {
-  sectionId: string; changedFields?: Set<string>; showChanges?: boolean; children: React.ReactNode;
+  sectionId: string; changedFields?: Map<string, string>; showChanges?: boolean; children: React.ReactNode;
 }) {
   const isChanged = showChanges && changedFields?.has(sectionId);
   if (!isChanged) return <>{children}</>;
+  
+  const changeType = changedFields?.get(sectionId) || "content";
+  const colorMap: Record<string, { border: string; bg: string; badge: string; badgeText: string; label: string }> = {
+    grammar: { border: "border-blue-400/60", bg: "bg-blue-400/5", badge: "bg-blue-400", badgeText: "text-blue-900", label: "GRAMMAR FIX" },
+    content: { border: "border-amber-400/60", bg: "bg-amber-400/5", badge: "bg-amber-400", badgeText: "text-amber-900", label: "CONTENT UPDATED" },
+    keyword: { border: "border-emerald-400/60", bg: "bg-emerald-400/5", badge: "bg-emerald-400", badgeText: "text-emerald-900", label: "KEYWORD OPTIMIZED" },
+    formatting: { border: "border-violet-400/60", bg: "bg-violet-400/5", badge: "bg-violet-400", badgeText: "text-violet-900", label: "REFORMATTED" },
+  };
+  const colors = colorMap[changeType] || colorMap.content;
+  
   return (
     <div className="relative">
-      <div className="absolute -inset-1 rounded-md border-2 border-amber-400/60 bg-amber-400/5 pointer-events-none" />
-      <div className="absolute -top-2.5 left-2 px-1.5 py-0.5 rounded text-[8px] font-bold bg-amber-400 text-amber-900 pointer-events-none z-10">
-        AI MODIFIED
+      <div className={`absolute -inset-1 rounded-md border-2 ${colors.border} ${colors.bg} pointer-events-none`} />
+      <div className={`absolute -top-2.5 left-2 px-1.5 py-0.5 rounded text-[8px] font-bold ${colors.badge} ${colors.badgeText} pointer-events-none z-10`}>
+        {colors.label}
       </div>
       {children}
     </div>
@@ -336,7 +346,7 @@ function renderSections(
   data: ResumeData,
   config: TemplateStyleConfig,
   sectionOrder?: SectionOrder[],
-  changedFields?: Set<string>,
+  changedFields?: Map<string, string>,
   showChanges?: boolean,
   layoutVariant?: "single" | "sidebar-main" | "sidebar-side"
 ) {
@@ -425,7 +435,7 @@ function renderSections(
 
 export interface TemplateExtraProps {
   sectionOrder?: SectionOrder[];
-  changedFields?: Set<string>;
+  changedFields?: Map<string, string>;
   showChanges?: boolean;
 }
 
