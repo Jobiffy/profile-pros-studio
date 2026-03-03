@@ -112,11 +112,23 @@ export function useResumeAI(resumeData: ResumeData) {
         content: m.content,
       }));
 
-      const { data, error } = await supabase.functions.invoke("resume-ai", {
-        body: { action: "chat", resumeData, messages: allMessages },
+      // Use fetch directly to avoid supabase.functions.invoke issues
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/resume-ai`;
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ action: "chat", resumeData, messages: allMessages }),
       });
 
-      if (error) throw error;
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        throw new Error(errData.error || `Request failed (${resp.status})`);
+      }
+
+      const data = await resp.json();
 
       const appliedActions: string[] = [];
       const toolCalls: ToolCallAction[] = data.tool_calls || [];
