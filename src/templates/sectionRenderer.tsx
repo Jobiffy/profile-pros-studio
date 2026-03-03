@@ -18,13 +18,27 @@ const HIGHLIGHT_COLORS: Record<string, { border: string; bg: string; badge: stri
   formatting: { border: "border-violet-400/60", bg: "bg-violet-400/5", badge: "bg-violet-400", badgeText: "text-violet-900", label: "REFORMATTED" },
 };
 
-export function HighlightWrap({ sectionId, changedFields, showChanges, children }: {
-  sectionId: string; changedFields?: Map<string, string>; showChanges?: boolean; children: React.ReactNode;
+/**
+ * Check if any changed field matches a given prefix.
+ * e.g., prefix "experience[0]" matches "experience[0].bullets", "experience[0].title", etc.
+ * prefix "summary" matches "summary"
+ */
+export function getChangeType(changedFields: Map<string, string> | undefined, prefix: string): string | null {
+  if (!changedFields) return null;
+  // Exact match
+  if (changedFields.has(prefix)) return changedFields.get(prefix)!;
+  // Prefix match (e.g., "experience[0]" matches "experience[0].bullets")
+  for (const [key, type] of changedFields) {
+    if (key.startsWith(prefix + ".") || key.startsWith(prefix + "[")) return type;
+  }
+  return null;
+}
+
+export function HighlightWrap({ changeType, children }: {
+  changeType: string | null; children: React.ReactNode;
 }) {
-  const isChanged = showChanges && changedFields?.has(sectionId);
-  if (!isChanged) return <>{children}</>;
+  if (!changeType) return <>{children}</>;
   
-  const changeType = changedFields?.get(sectionId) || "content";
   const colors = HIGHLIGHT_COLORS[changeType] || HIGHLIGHT_COLORS.content;
   
   return (
@@ -41,7 +55,7 @@ export function HighlightWrap({ sectionId, changedFields, showChanges, children 
 /**
  * Universal section renderer for hand-coded templates.
  * Maps section IDs to render functions and renders them in sectionOrder.
- * Supports color-coded highlighting of AI changes.
+ * Supports granular color-coded highlighting of AI changes per item.
  */
 export function renderOrderedSections(
   sectionOrder: SectionOrderItem[] | undefined,
@@ -59,17 +73,16 @@ export function renderOrderedSections(
       const content = renderFn();
       if (!content) return null;
       
-      if (highlightProps?.changedFields && highlightProps?.showChanges) {
-        return (
-          <HighlightWrap
-            key={s.id}
-            sectionId={s.id}
-            changedFields={highlightProps.changedFields}
-            showChanges={highlightProps.showChanges}
-          >
-            {content}
-          </HighlightWrap>
-        );
+      // Check for section-level highlight (e.g., "summary" exact match)
+      if (highlightProps?.showChanges && highlightProps?.changedFields) {
+        const ct = getChangeType(highlightProps.changedFields, s.id);
+        if (ct) {
+          return (
+            <HighlightWrap key={s.id} changeType={ct}>
+              {content}
+            </HighlightWrap>
+          );
+        }
       }
       
       return <React.Fragment key={s.id}>{content}</React.Fragment>;
