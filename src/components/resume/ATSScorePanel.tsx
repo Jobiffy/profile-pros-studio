@@ -88,7 +88,7 @@ export function ATSScorePanel({ result, loading, onAnalyze }: Props) {
       <div className="p-4 border-b border-border/50">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <Target size={16} className="text-primary" /> ATS Score Analysis
+            <Target size={16} className="text-primary" /> Jobiffy ATS Score Checker
           </h3>
           <button
             onClick={onAnalyze}
