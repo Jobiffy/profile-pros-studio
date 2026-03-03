@@ -1,7 +1,7 @@
 // Generic Template 3: Professional Classic
 import React from "react";
 import { ResumeData } from "@/types/resume";
-import { renderOrderedSections, SectionOrderItem, HighlightProps, HighlightWrap } from "./sectionRenderer";
+import { renderOrderedSections, SectionOrderItem, HighlightProps, HighlightWrap, getChangeType } from "./sectionRenderer";
 
 const sidebarSections = new Set(["skills", "certifications"]);
 
@@ -12,45 +12,60 @@ export const ProfessionalClassic = ({ data, sectionOrder, changedFields, showCha
     ) : null,
     experience: () => (
       <PMain title="WORK EXPERIENCE">
-        {data.experience.map((exp, i) => (
-          <div key={i} className="mb-4">
-            <div className="flex justify-between">
-              <h3 className="font-bold">{exp.title}</h3>
-              <span className="text-[10px]" style={{ color: '#a0aec0' }}>{exp.startDate} – {exp.endDate}</span>
-            </div>
-            <p className="text-[10px] italic mb-1" style={{ color: '#718096' }}>{exp.company}, {exp.location}</p>
-            <ul className="list-disc ml-4 space-y-0.5">{exp.bullets.map((b, j) => <li key={j}>{b}</li>)}</ul>
-          </div>
-        ))}
+        {data.experience.map((exp, i) => {
+          const ct = showChanges ? getChangeType(changedFields, `experience[${i}]`) : null;
+          return (
+            <HighlightWrap key={i} changeType={ct}>
+              <div className="mb-4">
+                <div className="flex justify-between">
+                  <h3 className="font-bold">{exp.title}</h3>
+                  <span className="text-[10px]" style={{ color: '#a0aec0' }}>{exp.startDate} – {exp.endDate}</span>
+                </div>
+                <p className="text-[10px] italic mb-1" style={{ color: '#718096' }}>{exp.company}, {exp.location}</p>
+                <ul className="list-disc ml-4 space-y-0.5">{exp.bullets.map((b, j) => <li key={j}>{b}</li>)}</ul>
+              </div>
+            </HighlightWrap>
+          );
+        })}
       </PMain>
     ),
     education: () => (
       <PMain title="EDUCATION">
-        {data.education.map((edu, i) => (
-          <div key={i} className="mb-2 flex justify-between">
-            <div><span className="font-bold">{edu.degree}</span> – {edu.school}{edu.gpa && ` (${edu.gpa})`}</div>
-            <span className="text-[10px]">{edu.endDate}</span>
-          </div>
-        ))}
+        {data.education.map((edu, i) => {
+          const ct = showChanges ? getChangeType(changedFields, `education[${i}]`) : null;
+          return (
+            <HighlightWrap key={i} changeType={ct}>
+              <div className="mb-2 flex justify-between">
+                <div><span className="font-bold">{edu.degree}</span> – {edu.school}{edu.gpa && ` (${edu.gpa})`}</div>
+                <span className="text-[10px]">{edu.endDate}</span>
+              </div>
+            </HighlightWrap>
+          );
+        })}
       </PMain>
     ),
     skills: () => (
       <PSide title="SKILLS">
-        {data.skills.map((s, i) => (
-          <div key={i} className="mb-3">
-            <p className="text-[9px] uppercase tracking-wider mb-1" style={{ color: '#a0aec0' }}>{s.category}</p>
-            {s.items.map((item, j) => (
-              <div key={j} className="flex items-center gap-2 mb-0.5">
-                <div className="flex gap-0.5">
-                  {[1,2,3,4,5].map(n => (
-                    <div key={n} className="w-1.5 h-1.5 rounded-full" style={{ background: n <= 4 ? 'var(--resume-accent, #63b3ed)' : '#4a5568' }} />
-                  ))}
-                </div>
-                <span className="text-[10px]">{item}</span>
+        {data.skills.map((s, i) => {
+          const ct = showChanges ? getChangeType(changedFields, `skills[${i}]`) : null;
+          return (
+            <HighlightWrap key={i} changeType={ct}>
+              <div className="mb-3">
+                <p className="text-[9px] uppercase tracking-wider mb-1" style={{ color: '#a0aec0' }}>{s.category}</p>
+                {s.items.map((item, j) => (
+                  <div key={j} className="flex items-center gap-2 mb-0.5">
+                    <div className="flex gap-0.5">
+                      {[1,2,3,4,5].map(n => (
+                        <div key={n} className="w-1.5 h-1.5 rounded-full" style={{ background: n <= 4 ? 'var(--resume-accent, #63b3ed)' : '#4a5568' }} />
+                      ))}
+                    </div>
+                    <span className="text-[10px]">{item}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        ))}
+            </HighlightWrap>
+          );
+        })}
       </PSide>
     ),
     certifications: () => data.certifications?.length ? (
@@ -60,22 +75,32 @@ export const ProfessionalClassic = ({ data, sectionOrder, changedFields, showCha
     ) : null,
     projects: () => data.projects?.length ? (
       <PMain title="PROJECTS">
-        {data.projects.map((p, i) => (
-          <div key={i} className="mb-2">
-            <p className="font-bold">{p.name}{p.tech && <span className="font-normal text-[10px]" style={{ color: '#a0aec0' }}> · {p.tech}</span>}</p>
-            {p.bullets.map((b, j) => <p key={j} className="pl-2 text-[10px]">• {b}</p>)}
-          </div>
-        ))}
+        {data.projects.map((p, i) => {
+          const ct = showChanges ? getChangeType(changedFields, `projects[${i}]`) : null;
+          return (
+            <HighlightWrap key={i} changeType={ct}>
+              <div className="mb-2">
+                <p className="font-bold">{p.name}{p.tech && <span className="font-normal text-[10px]" style={{ color: '#a0aec0' }}> · {p.tech}</span>}</p>
+                {p.bullets.map((b, j) => <p key={j} className="pl-2 text-[10px]">• {b}</p>)}
+              </div>
+            </HighlightWrap>
+          );
+        })}
       </PMain>
     ) : null,
     leadership: () => data.leadership?.length ? (
       <PMain title="LEADERSHIP">
-        {data.leadership.map((l, i) => (
-          <div key={i} className="mb-2">
-            <p className="font-bold">{l.role} – {l.org}</p>
-            {l.bullets.map((b, j) => <p key={j} className="pl-2 text-[10px]">• {b}</p>)}
-          </div>
-        ))}
+        {data.leadership.map((l, i) => {
+          const ct = showChanges ? getChangeType(changedFields, `leadership[${i}]`) : null;
+          return (
+            <HighlightWrap key={i} changeType={ct}>
+              <div className="mb-2">
+                <p className="font-bold">{l.role} – {l.org}</p>
+                {l.bullets.map((b, j) => <p key={j} className="pl-2 text-[10px]">• {b}</p>)}
+              </div>
+            </HighlightWrap>
+          );
+        })}
       </PMain>
     ) : null,
   };
@@ -113,7 +138,7 @@ export const ProfessionalClassic = ({ data, sectionOrder, changedFields, showCha
           if (!fn) return null;
           const content = fn();
           if (!content) return null;
-          return <HighlightWrap key={s.id} sectionId={s.id} changedFields={changedFields} showChanges={showChanges}>{content}</HighlightWrap>;
+          return <React.Fragment key={s.id}>{content}</React.Fragment>;
         })}
       </div>
       <div className="w-[68%] p-6">
@@ -122,7 +147,7 @@ export const ProfessionalClassic = ({ data, sectionOrder, changedFields, showCha
           if (!fn) return null;
           const content = fn();
           if (!content) return null;
-          return <HighlightWrap key={s.id} sectionId={s.id} changedFields={changedFields} showChanges={showChanges}>{content}</HighlightWrap>;
+          return <React.Fragment key={s.id}>{content}</React.Fragment>;
         })}
       </div>
     </div>
