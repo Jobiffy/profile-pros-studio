@@ -1,9 +1,9 @@
 // Tech Template 2: Startup Modern
 import React from "react";
 import { ResumeData } from "@/types/resume";
-import { renderOrderedSections, SectionOrderItem } from "./sectionRenderer";
+import { renderOrderedSections, SectionOrderItem, HighlightProps } from "./sectionRenderer";
 
-export const StartupModern = ({ data, sectionOrder }: { data: ResumeData; sectionOrder?: SectionOrderItem[] }) => {
+export const StartupModern = ({ data, sectionOrder, changedFields, showChanges }: { data: ResumeData; sectionOrder?: SectionOrderItem[] } & HighlightProps) => {
   const sectionMap: Record<string, () => React.ReactNode> = {
     summary: () => data.summary ? (
       <div className="rounded-lg p-4 mb-5" style={{ background: 'var(--resume-accent-light, #eef4ff)' }}>
@@ -103,7 +103,7 @@ export const StartupModern = ({ data, sectionOrder }: { data: ResumeData; sectio
           ))}
         </div>
       </div>
-      {renderOrderedSections(sectionOrder, sectionMap)}
+      {renderOrderedSections(sectionOrder, sectionMap, { changedFields, showChanges })}
     </div>
   );
 };

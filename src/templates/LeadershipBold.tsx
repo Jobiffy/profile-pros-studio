@@ -1,9 +1,9 @@
 // MBA Template 5: Leadership Bold
 import React from "react";
 import { ResumeData } from "@/types/resume";
-import { renderOrderedSections, SectionOrderItem } from "./sectionRenderer";
+import { renderOrderedSections, SectionOrderItem, HighlightProps } from "./sectionRenderer";
 
-export const LeadershipBold = ({ data, sectionOrder }: { data: ResumeData; sectionOrder?: SectionOrderItem[] }) => {
+export const LeadershipBold = ({ data, sectionOrder, changedFields, showChanges }: { data: ResumeData; sectionOrder?: SectionOrderItem[] } & HighlightProps) => {
   const sectionMap: Record<string, () => React.ReactNode> = {
     summary: () => data.summary ? (
       <div className="p-3 rounded-sm mb-5" style={{ background: 'var(--resume-accent-light, #fdf5f5)', borderLeft: `3px solid var(--resume-accent, #8B0000)` }}>
@@ -104,7 +104,7 @@ export const LeadershipBold = ({ data, sectionOrder }: { data: ResumeData; secti
           {data.header.linkedin && <span>{data.header.linkedin}</span>}
         </div>
       </div>
-      {renderOrderedSections(sectionOrder, sectionMap)}
+      {renderOrderedSections(sectionOrder, sectionMap, { changedFields, showChanges })}
     </div>
   );
 };

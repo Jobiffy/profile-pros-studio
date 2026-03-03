@@ -1,9 +1,9 @@
 // Generic Template 2: Creative Color
 import React from "react";
 import { ResumeData } from "@/types/resume";
-import { renderOrderedSections, SectionOrderItem } from "./sectionRenderer";
+import { renderOrderedSections, SectionOrderItem, HighlightProps } from "./sectionRenderer";
 
-export const CreativeColor = ({ data, sectionOrder }: { data: ResumeData; sectionOrder?: SectionOrderItem[] }) => {
+export const CreativeColor = ({ data, sectionOrder, changedFields, showChanges }: { data: ResumeData; sectionOrder?: SectionOrderItem[] } & HighlightProps) => {
   const sectionMap: Record<string, () => React.ReactNode> = {
     summary: () => data.summary ? <p className="mb-5 text-[10.5px] leading-relaxed p-3 rounded-lg" style={{ background: 'var(--resume-accent-light, #fff7ed)' }}>{data.summary}</p> : null,
     experience: () => (
@@ -103,7 +103,7 @@ export const CreativeColor = ({ data, sectionOrder }: { data: ResumeData; sectio
             {data.header.linkedin && <span>{data.header.linkedin}</span>}
           </div>
         </div>
-        {renderOrderedSections(sectionOrder, sectionMap)}
+        {renderOrderedSections(sectionOrder, sectionMap, { changedFields, showChanges })}
       </div>
     </div>
   );

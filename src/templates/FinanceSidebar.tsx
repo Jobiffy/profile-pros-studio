@@ -1,11 +1,11 @@
 // MBA Template 4: Finance Sidebar
 import React from "react";
 import { ResumeData } from "@/types/resume";
-import { renderOrderedSections, SectionOrderItem } from "./sectionRenderer";
+import { renderOrderedSections, SectionOrderItem, HighlightProps, HighlightWrap } from "./sectionRenderer";
 
 const sidebarSections = new Set(["skills", "certifications", "education"]);
 
-export const FinanceSidebar = ({ data, sectionOrder }: { data: ResumeData; sectionOrder?: SectionOrderItem[] }) => {
+export const FinanceSidebar = ({ data, sectionOrder, changedFields, showChanges }: { data: ResumeData; sectionOrder?: SectionOrderItem[] } & HighlightProps) => {
   const sectionMap: Record<string, () => React.ReactNode> = {
     summary: () => data.summary ? (
       <div className="mb-4 pb-3" style={{ borderBottom: `2px solid var(--resume-accent-dark, #0a1628)` }}>
@@ -108,13 +108,19 @@ export const FinanceSidebar = ({ data, sectionOrder }: { data: ResumeData; secti
         </SideSection>
         {sideItems.map(s => {
           const fn = sectionMap[s.id];
-          return fn ? <React.Fragment key={s.id}>{fn()}</React.Fragment> : null;
+          if (!fn) return null;
+          const content = fn();
+          if (!content) return null;
+          return <HighlightWrap key={s.id} sectionId={s.id} changedFields={changedFields} showChanges={showChanges}>{content}</HighlightWrap>;
         })}
       </div>
       <div className="w-[70%] p-6 font-source">
         {mainItems.map(s => {
           const fn = sectionMap[s.id];
-          return fn ? <React.Fragment key={s.id}>{fn()}</React.Fragment> : null;
+          if (!fn) return null;
+          const content = fn();
+          if (!content) return null;
+          return <HighlightWrap key={s.id} sectionId={s.id} changedFields={changedFields} showChanges={showChanges}>{content}</HighlightWrap>;
         })}
       </div>
     </div>
