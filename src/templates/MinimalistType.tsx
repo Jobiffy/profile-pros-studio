@@ -1,26 +1,30 @@
 // Generic Template 4: Minimalist Type
 import React from "react";
 import { ResumeData } from "@/types/resume";
-import { renderOrderedSections, SectionOrderItem, HighlightProps } from "./sectionRenderer";
+import { renderOrderedSections, SectionOrderItem, HighlightProps, HighlightWrap, getChangeType } from "./sectionRenderer";
 
 export const MinimalistType = ({ data, sectionOrder, changedFields, showChanges }: { data: ResumeData; sectionOrder?: SectionOrderItem[] } & HighlightProps) => {
+  const ct = (prefix: string) => showChanges ? getChangeType(changedFields, prefix) : null;
+
   const sectionMap: Record<string, () => React.ReactNode> = {
     summary: () => data.summary ? <p className="mb-10 leading-relaxed max-w-[85%]" style={{ color: '#777' }}>{data.summary}</p> : null,
     experience: () => (
       <>
         <MinH>Experience</MinH>
         {data.experience.map((exp, i) => (
-          <div key={i} className="mb-6 grid grid-cols-[120px_1fr] gap-4">
-            <div className="text-[10px]" style={{ color: '#bbb' }}>
-              <p>{exp.startDate}</p>
-              <p>{exp.endDate}</p>
+          <HighlightWrap key={i} changeType={ct(`experience[${i}]`)}>
+            <div className="mb-6 grid grid-cols-[120px_1fr] gap-4">
+              <div className="text-[10px]" style={{ color: '#bbb' }}>
+                <p>{exp.startDate}</p>
+                <p>{exp.endDate}</p>
+              </div>
+              <div>
+                <h3 className="font-medium">{exp.title}</h3>
+                <p className="text-[10px] mb-1.5" style={{ color: '#999' }}>{exp.company}</p>
+                {exp.bullets.map((b, j) => <p key={j} className="mb-0.5" style={{ color: '#555' }}>{b}</p>)}
+              </div>
             </div>
-            <div>
-              <h3 className="font-medium">{exp.title}</h3>
-              <p className="text-[10px] mb-1.5" style={{ color: '#999' }}>{exp.company}</p>
-              {exp.bullets.map((b, j) => <p key={j} className="mb-0.5" style={{ color: '#555' }}>{b}</p>)}
-            </div>
-          </div>
+          </HighlightWrap>
         ))}
       </>
     ),
@@ -28,33 +32,41 @@ export const MinimalistType = ({ data, sectionOrder, changedFields, showChanges 
       <>
         <MinH>Education</MinH>
         {data.education.map((edu, i) => (
-          <div key={i} className="mb-3 grid grid-cols-[120px_1fr] gap-4">
-            <span className="text-[10px]" style={{ color: '#bbb' }}>{edu.endDate}</span>
-            <div>
-              <p className="font-medium">{edu.degree}</p>
-              <p className="text-[10px]" style={{ color: '#999' }}>{edu.school}{edu.gpa && ` · ${edu.gpa}`}</p>
+          <HighlightWrap key={i} changeType={ct(`education[${i}]`)}>
+            <div className="mb-3 grid grid-cols-[120px_1fr] gap-4">
+              <span className="text-[10px]" style={{ color: '#bbb' }}>{edu.endDate}</span>
+              <div>
+                <p className="font-medium">{edu.degree}</p>
+                <p className="text-[10px]" style={{ color: '#999' }}>{edu.school}{edu.gpa && ` · ${edu.gpa}`}</p>
+              </div>
             </div>
-          </div>
+          </HighlightWrap>
         ))}
       </>
     ),
     skills: () => (
       <>
         <MinH>Skills</MinH>
-        <p style={{ color: '#777' }}>{data.skills.flatMap(s => s.items).join("  ·  ")}</p>
+        {data.skills.map((s, i) => (
+          <HighlightWrap key={i} changeType={ct(`skills[${i}]`)}>
+            <p style={{ color: '#777' }}><span className="font-medium">{s.category}: </span>{s.items.join("  ·  ")}</p>
+          </HighlightWrap>
+        ))}
       </>
     ),
     projects: () => data.projects?.length ? (
       <>
         <MinH>Projects</MinH>
         {data.projects.map((p, i) => (
-          <div key={i} className="mb-3 grid grid-cols-[120px_1fr] gap-4">
-            <span className="text-[10px]" style={{ color: '#bbb' }}>{p.tech || ''}</span>
-            <div>
-              <p className="font-medium">{p.name}</p>
-              {p.bullets.map((b, j) => <p key={j} className="mb-0.5" style={{ color: '#555' }}>{b}</p>)}
+          <HighlightWrap key={i} changeType={ct(`projects[${i}]`)}>
+            <div className="mb-3 grid grid-cols-[120px_1fr] gap-4">
+              <span className="text-[10px]" style={{ color: '#bbb' }}>{p.tech || ''}</span>
+              <div>
+                <p className="font-medium">{p.name}</p>
+                {p.bullets.map((b, j) => <p key={j} className="mb-0.5" style={{ color: '#555' }}>{b}</p>)}
+              </div>
             </div>
-          </div>
+          </HighlightWrap>
         ))}
       </>
     ) : null,
@@ -68,13 +80,15 @@ export const MinimalistType = ({ data, sectionOrder, changedFields, showChanges 
       <>
         <MinH>Leadership</MinH>
         {data.leadership.map((l, i) => (
-          <div key={i} className="mb-3 grid grid-cols-[120px_1fr] gap-4">
-            <span className="text-[10px]" style={{ color: '#bbb' }}>{l.date}</span>
-            <div>
-              <p className="font-medium">{l.role} – {l.org}</p>
-              {l.bullets.map((b, j) => <p key={j} className="mb-0.5" style={{ color: '#555' }}>{b}</p>)}
+          <HighlightWrap key={i} changeType={ct(`leadership[${i}]`)}>
+            <div className="mb-3 grid grid-cols-[120px_1fr] gap-4">
+              <span className="text-[10px]" style={{ color: '#bbb' }}>{l.date}</span>
+              <div>
+                <p className="font-medium">{l.role} – {l.org}</p>
+                {l.bullets.map((b, j) => <p key={j} className="mb-0.5" style={{ color: '#555' }}>{b}</p>)}
+              </div>
             </div>
-          </div>
+          </HighlightWrap>
         ))}
       </>
     ) : null,

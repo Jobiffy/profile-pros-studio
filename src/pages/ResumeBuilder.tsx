@@ -4,6 +4,7 @@ import { templateList, templateComponents } from "@/templates";
 import { TemplateInfo } from "@/types/resume";
 import { useResumeData } from "@/hooks/useResumeData";
 import { useResumeAI } from "@/hooks/useResumeAI";
+import { useResumeStore } from "@/hooks/useResumeStore";
 import { ResumeEditPanel } from "@/components/resume/ResumeEditPanel";
 import { ATSScorePanel } from "@/components/resume/ATSScorePanel";
 import { JDMatchPanel } from "@/components/resume/JDMatchPanel";
@@ -19,6 +20,7 @@ import {
   FileText, Sparkles, MessageSquare, Target, Briefcase,
   Download, Upload, Palette, Zap, Eye, EyeOff,
   PanelLeftClose, PanelLeftOpen, LayoutList, Sun, Moon, FileDown,
+  Plus, X, FileEdit,
 } from "lucide-react";
 
 type RightPanel = "none" | "ats" | "jd" | "chat";
@@ -42,6 +44,9 @@ const ResumeBuilder = () => {
     localStorage.setItem("jobiffy-theme", next ? "dark" : "light");
   }, [darkMode]);
 
+  // Resume store for multi-resume + per-resume chat
+  const resumeStore = useResumeStore();
+
   const resumeState = useResumeData();
   const {
     resumeData, setResumeData, updateHeader, updateSummary, updateExperience, updateEducation, updateField,
@@ -49,11 +54,23 @@ const ResumeBuilder = () => {
     changedFields, showChanges, setShowChanges, clearChanges, markChanged,
   } = resumeState;
 
+  // Sync resume data from store when switching resumes
+  useEffect(() => {
+    if (resumeStore.activeResume) {
+      setResumeData(resumeStore.activeResume.data);
+      clearChanges();
+    }
+  }, [resumeStore.activeId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Persist resume data to store on changes
+  useEffect(() => {
+    resumeStore.updateActiveData(resumeData);
+  }, [resumeData]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [sectionItems, setSectionItems] = useState<SectionItem[]>(() => getDefaultSections(resumeData.customSections));
 
   const handleAddCustomSection = useCallback((title: string) => {
     resumeState.addCustomSection();
-    // Update the last added custom section's title
     setResumeData(prev => {
       const customs = [...(prev.customSections || [])];
       customs[customs.length - 1] = { ...customs[customs.length - 1], title };
@@ -70,21 +87,34 @@ const ResumeBuilder = () => {
     }
   }, [resumeState]);
 
+  // Chat messages from store
+  const storedChatMessages = resumeStore.activeResume?.chatMessages || [];
+
   const {
     atsResult, atsLoading, analyzeATS,
     jdResult, jdLoading, matchJD,
     tailorLoading, tailorResume,
     chatMessages, chatLoading, sendChatMessage,
+    setChatMessages,
   } = useResumeAI(resumeData);
+
+  // Load chat messages from store when switching resumes
+  useEffect(() => {
+    setChatMessages(storedChatMessages);
+  }, [resumeStore.activeId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Persist chat messages to store
+  useEffect(() => {
+    if (chatMessages.length > 0) {
+      resumeStore.updateActiveChatMessages(chatMessages);
+    }
+  }, [chatMessages]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const TemplateComponent = templateComponents[selectedTemplate.id];
 
-  // Build reordered resume data based on sectionOrder so ALL templates reflect the order
   const orderedResumeData = React.useMemo(() => {
     const visibilityMap = new Map(sectionItems.map(s => [s.id, s.visible]));
     const data = { ...resumeData };
-
-    // Hide sections that are toggled off
     if (visibilityMap.get("summary") === false) data.summary = "";
     if (visibilityMap.get("experience") === false) data.experience = [];
     if (visibilityMap.get("education") === false) data.education = [];
@@ -92,19 +122,15 @@ const ResumeBuilder = () => {
     if (visibilityMap.get("projects") === false) data.projects = [];
     if (visibilityMap.get("certifications") === false) data.certifications = [];
     if (visibilityMap.get("leadership") === false) data.leadership = [];
-
-    // Filter out hidden custom sections
     if (data.customSections) {
       data.customSections = data.customSections.filter((_, i) => visibilityMap.get(`custom_${i}`) !== false);
     }
-
     return data;
   }, [resumeData, sectionItems]);
 
   useEffect(() => {
     const visited = localStorage.getItem("jobiffy-onboarded");
     if (!visited) setShowOnboarding(true);
-    // Restore theme
     const savedTheme = localStorage.getItem("jobiffy-theme");
     if (savedTheme === "dark") {
       document.documentElement.classList.add("dark");
@@ -139,7 +165,6 @@ const ResumeBuilder = () => {
             const item = map.get(id);
             if (item) reordered.push(item);
           }
-          // Add remaining items not in the new order
           for (const item of prev) {
             if (!order.includes(item.id)) reordered.push(item);
           }
@@ -177,6 +202,9 @@ const ResumeBuilder = () => {
 
   const handleImport = (data: any) => {
     setResumeData(data);
+    // When importing a new resume, create a new resume tab
+    const name = data.header?.name ? `${data.header.name}'s Resume` : "Imported Resume";
+    resumeStore.addResume(name, data);
   };
 
   const handleTailorResume = async (jd: string) => {
@@ -189,17 +217,16 @@ const ResumeBuilder = () => {
     }
   };
 
+  const handleNewResume = useCallback(() => {
+    resumeStore.addResume(`Resume ${resumeStore.resumes.length + 1}`);
+  }, [resumeStore]);
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      {/* Onboarding */}
       {showOnboarding && (
         <OnboardingTour onComplete={handleOnboardingComplete} onNavigate={handleOnboardingNavigate} />
       )}
-
-      {/* Import Modal */}
       <ResumeImport open={showImport} onClose={() => setShowImport(false)} onImport={handleImport} />
-
-      {/* Color Palette Modal */}
       <ColorPalettePanel
         open={showColorPalette}
         onClose={() => setShowColorPalette(false)}
@@ -239,6 +266,41 @@ const ResumeBuilder = () => {
               </div>
               <button onClick={() => setLeftCollapsed(true)} className="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all">
                 <PanelLeftClose size={16} />
+              </button>
+            </div>
+
+            {/* Resume Tabs */}
+            <div className="flex items-center gap-1 px-2 py-1.5 border-b border-border/40 overflow-x-auto scrollbar-none">
+              {resumeStore.resumes.map(r => (
+                <button
+                  key={r.id}
+                  onClick={() => resumeStore.switchResume(r.id)}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[10px] font-medium transition-all shrink-0 max-w-[140px] group ${
+                    r.id === resumeStore.activeId
+                      ? "bg-primary/10 text-primary border border-primary/20"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                  }`}
+                >
+                  <FileEdit size={10} className="shrink-0" />
+                  <span className="truncate">{r.name}</span>
+                  {resumeStore.resumes.length > 1 && (
+                    <X
+                      size={10}
+                      className="shrink-0 opacity-0 group-hover:opacity-100 hover:text-destructive transition-all"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        resumeStore.deleteResume(r.id);
+                      }}
+                    />
+                  )}
+                </button>
+              ))}
+              <button
+                onClick={handleNewResume}
+                className="w-6 h-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-all shrink-0"
+                title="New Resume"
+              >
+                <Plus size={12} />
               </button>
             </div>
 
@@ -339,7 +401,6 @@ const ResumeBuilder = () => {
           </div>
 
           <div className="flex items-center gap-1.5">
-            {/* AI Tools */}
             {[
               { icon: Target, label: "ATS Score", panel: "ats" as RightPanel },
               { icon: Briefcase, label: "JD Match", panel: "jd" as RightPanel },
@@ -368,7 +429,6 @@ const ResumeBuilder = () => {
 
             <div className="w-px h-5 bg-border mx-1" />
 
-            {/* Theme Toggle */}
             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={toggleTheme}
               className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
               title={darkMode ? "Switch to light mode" : "Switch to dark mode"}>
@@ -479,7 +539,6 @@ const ResumeBuilder = () => {
             <span className="text-[10px] text-muted-foreground w-10 text-center">{Math.round(previewScale * 100)}%</span>
             <button onClick={() => setPreviewScale(s => Math.min(1.2, s + 0.1))} className="w-6 h-6 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex items-center justify-center">+</button>
           </div>
-
           <div />
         </div>
       </div>
@@ -517,6 +576,7 @@ const ResumeBuilder = () => {
                     messages={chatMessages}
                     loading={chatLoading}
                     onSend={handleChatSend}
+                    resumeName={resumeStore.activeResume?.name || "Resume"}
                   />
                 </motion.div>
               )}

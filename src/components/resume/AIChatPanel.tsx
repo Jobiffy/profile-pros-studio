@@ -10,6 +10,7 @@ interface Props {
   messages: ChatMessage[];
   loading: boolean;
   onSend: (message: string) => void;
+  resumeName?: string;
 }
 
 const suggestions = [
@@ -23,7 +24,7 @@ const suggestions = [
   { text: "Add 'Python, Docker, Kubernetes' to my skills", emoji: "⭐" },
 ];
 
-export function AIChatPanel({ messages, loading, onSend }: Props) {
+export function AIChatPanel({ messages, loading, onSend, resumeName }: Props) {
   const [input, setInput] = useState("");
   const [isListening, setIsListening] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
@@ -83,7 +84,9 @@ export function AIChatPanel({ messages, loading, onSend }: Props) {
           </div>
           <div>
             <h3 className="text-sm font-semibold text-foreground">Jobiffy AI Resume Coach</h3>
-            <p className="text-[10px] text-muted-foreground">Edit, reorder, improve — just ask</p>
+            <p className="text-[10px] text-muted-foreground">
+              {resumeName ? `Editing: ${resumeName}` : "Edit, reorder, improve — just ask"}
+            </p>
           </div>
         </div>
       </div>

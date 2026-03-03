@@ -307,14 +307,11 @@ function MinimalLayout({ data, config }: { data: ResumeData; config: TemplateSty
 // ══════════════════════════════════════════
 // Factory
 // ══════════════════════════════════════════
-// ── Highlight wrapper ──
-function HighlightWrap({ sectionId, changedFields, showChanges, children }: {
-  sectionId: string; changedFields?: Map<string, string>; showChanges?: boolean; children: React.ReactNode;
-}) {
-  const isChanged = showChanges && changedFields?.has(sectionId);
-  if (!isChanged) return <>{children}</>;
-  
-  const changeType = changedFields?.get(sectionId) || "content";
+// ── Highlight wrapper (uses shared getChangeType for granular matching) ──
+import { getChangeType } from "./sectionRenderer";
+
+function HWrap({ changeType, children }: { changeType: string | null; children: React.ReactNode }) {
+  if (!changeType) return <>{children}</>;
   const colorMap: Record<string, { border: string; bg: string; badge: string; badgeText: string; label: string }> = {
     grammar: { border: "border-blue-400/60", bg: "bg-blue-400/5", badge: "bg-blue-400", badgeText: "text-blue-900", label: "GRAMMAR FIX" },
     content: { border: "border-amber-400/60", bg: "bg-amber-400/5", badge: "bg-amber-400", badgeText: "text-amber-900", label: "CONTENT UPDATED" },
@@ -322,7 +319,6 @@ function HighlightWrap({ sectionId, changedFields, showChanges, children }: {
     formatting: { border: "border-violet-400/60", bg: "bg-violet-400/5", badge: "bg-violet-400", badgeText: "text-violet-900", label: "REFORMATTED" },
   };
   const colors = colorMap[changeType] || colorMap.content;
-  
   return (
     <div className="relative">
       <div className={`absolute -inset-1 rounded-md border-2 ${colors.border} ${colors.bg} pointer-events-none`} />
@@ -367,49 +363,78 @@ function renderSections(
     ? (s: SectionOrder) => !sidebarSections.has(s.id)
     : () => true;
 
+  const ct = (prefix: string) => showChanges ? getChangeType(changedFields, prefix) : null;
+
   return order.filter(s => s.visible).filter(filterFn).map(s => {
     const key = s.id;
     if (key === "summary" && data.summary) return (
-      <HighlightWrap key={key} sectionId="summary" changedFields={changedFields} showChanges={showChanges}>
+      <HWrap key={key} changeType={ct("summary")}>
         <STitle title="Summary" style={config.sectionStyle} color={c} />
         <p className="text-[10.5px] text-gray-700 leading-[1.6]">{data.summary}</p>
-      </HighlightWrap>
+      </HWrap>
     );
     if (key === "experience") return (
-      <HighlightWrap key={key} sectionId="experience" changedFields={changedFields} showChanges={showChanges}>
+      <React.Fragment key={key}>
         <STitle title="Experience" style={config.sectionStyle} color={c} />
-        {data.experience.map((exp, i) => <ExpBlock key={i} exp={exp} config={config} />)}
-      </HighlightWrap>
+        {data.experience.map((exp, i) => (
+          <HWrap key={i} changeType={ct(`experience[${i}]`)}>
+            <ExpBlock exp={exp} config={config} />
+          </HWrap>
+        ))}
+      </React.Fragment>
     );
     if (key === "education") return (
-      <HighlightWrap key={key} sectionId="education" changedFields={changedFields} showChanges={showChanges}>
+      <React.Fragment key={key}>
         <STitle title="Education" style={config.sectionStyle} color={c} />
-        {data.education.map((edu, i) => <EduBlock key={i} edu={edu} />)}
-      </HighlightWrap>
+        {data.education.map((edu, i) => (
+          <HWrap key={i} changeType={ct(`education[${i}]`)}>
+            <EduBlock edu={edu} />
+          </HWrap>
+        ))}
+      </React.Fragment>
     );
     if (key === "skills") return (
-      <HighlightWrap key={key} sectionId="skills" changedFields={changedFields} showChanges={showChanges}>
+      <React.Fragment key={key}>
         <STitle title="Skills" style={config.sectionStyle} color={c} />
-        <SkillsBlock skills={data.skills} layout={layoutVariant === "sidebar-side" ? "list" : "grid"} />
-      </HighlightWrap>
+        {data.skills.map((s, i) => (
+          <HWrap key={i} changeType={ct(`skills[${i}]`)}>
+            <div className="text-[10.5px]"><span className="font-semibold">{s.category}: </span>{s.items.join(", ")}</div>
+          </HWrap>
+        ))}
+      </React.Fragment>
     );
     if (key === "projects" && data.projects?.length) return (
-      <HighlightWrap key={key} sectionId="projects" changedFields={changedFields} showChanges={showChanges}>
+      <React.Fragment key={key}>
         <STitle title="Projects" style={config.sectionStyle} color={c} />
-        <ProjectsBlock projects={data.projects} config={config} />
-      </HighlightWrap>
+        {data.projects.map((p, i) => (
+          <HWrap key={i} changeType={ct(`projects[${i}]`)}>
+            <div className="mb-2">
+              <div><span className="font-semibold text-[11px]">{p.name}</span>{p.tech && <span className="text-gray-400 text-[10px]"> ({p.tech})</span>}</div>
+              <p className="text-[10.5px] text-gray-600">{p.description}</p>
+              <Bullets items={p.bullets} style={config.bulletStyle} />
+            </div>
+          </HWrap>
+        ))}
+      </React.Fragment>
     );
     if (key === "certifications" && data.certifications?.length) return (
-      <HighlightWrap key={key} sectionId="certifications" changedFields={changedFields} showChanges={showChanges}>
+      <HWrap key={key} changeType={ct("certifications")}>
         <STitle title="Certifications" style={config.sectionStyle} color={c} />
         <CertsBlock certs={data.certifications} />
-      </HighlightWrap>
+      </HWrap>
     );
     if (key === "leadership" && data.leadership?.length) return (
-      <HighlightWrap key={key} sectionId="leadership" changedFields={changedFields} showChanges={showChanges}>
+      <React.Fragment key={key}>
         <STitle title="Leadership" style={config.sectionStyle} color={c} />
-        <LeadershipBlock items={data.leadership} config={config} />
-      </HighlightWrap>
+        {data.leadership.map((l, i) => (
+          <HWrap key={i} changeType={ct(`leadership[${i}]`)}>
+            <div className="mb-2">
+              <div className="flex justify-between"><span className="font-semibold text-[11px]">{l.role}, {l.org}</span><span className="text-[9.5px] text-gray-400">{l.date}</span></div>
+              <Bullets items={l.bullets} style={config.bulletStyle} />
+            </div>
+          </HWrap>
+        ))}
+      </React.Fragment>
     );
     // Custom sections
     if (key.startsWith("custom_")) {
@@ -417,7 +442,7 @@ function renderSections(
       const sec = data.customSections?.[idx];
       if (!sec) return null;
       return (
-        <HighlightWrap key={key} sectionId={key} changedFields={changedFields} showChanges={showChanges}>
+        <HWrap key={key} changeType={ct(key)}>
           <STitle title={sec.title} style={config.sectionStyle} color={c} />
           {sec.items.map((item, j) => (
             <div key={j} className="mb-2">
@@ -426,7 +451,7 @@ function renderSections(
               {item.bullets && <Bullets items={item.bullets} style={config.bulletStyle} />}
             </div>
           ))}
-        </HighlightWrap>
+        </HWrap>
       );
     }
     return null;

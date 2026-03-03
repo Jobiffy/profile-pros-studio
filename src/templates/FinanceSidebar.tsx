@@ -1,7 +1,7 @@
 // MBA Template 4: Finance Sidebar
 import React from "react";
 import { ResumeData } from "@/types/resume";
-import { renderOrderedSections, SectionOrderItem, HighlightProps, HighlightWrap } from "./sectionRenderer";
+import { renderOrderedSections, SectionOrderItem, HighlightProps, HighlightWrap, getChangeType } from "./sectionRenderer";
 
 const sidebarSections = new Set(["skills", "certifications", "education"]);
 
@@ -14,39 +14,54 @@ export const FinanceSidebar = ({ data, sectionOrder, changedFields, showChanges 
     ) : null,
     experience: () => (
       <MainSection title="Professional Experience">
-        {data.experience.map((exp, i) => (
-          <div key={i} className="mb-4">
-            <div className="flex justify-between">
-              <span className="font-bold">{exp.title}</span>
-              <span className="text-[10px]" style={{ color: '#888' }}>{exp.startDate} – {exp.endDate}</span>
-            </div>
-            <p className="text-[10px] mb-1" style={{ color: '#666' }}>{exp.company}, {exp.location}</p>
-            <ul className="list-disc ml-4 space-y-0.5">{exp.bullets.map((b, j) => <li key={j}>{b}</li>)}</ul>
-          </div>
-        ))}
+        {data.experience.map((exp, i) => {
+          const ct = showChanges ? getChangeType(changedFields, `experience[${i}]`) : null;
+          return (
+            <HighlightWrap key={i} changeType={ct}>
+              <div className="mb-4">
+                <div className="flex justify-between">
+                  <span className="font-bold">{exp.title}</span>
+                  <span className="text-[10px]" style={{ color: '#888' }}>{exp.startDate} – {exp.endDate}</span>
+                </div>
+                <p className="text-[10px] mb-1" style={{ color: '#666' }}>{exp.company}, {exp.location}</p>
+                <ul className="list-disc ml-4 space-y-0.5">{exp.bullets.map((b, j) => <li key={j}>{b}</li>)}</ul>
+              </div>
+            </HighlightWrap>
+          );
+        })}
       </MainSection>
     ),
     education: () => (
       <SideSection title="Education">
-        {data.education.map((edu, i) => (
-          <div key={i} className="mb-1.5">
-            <p className="text-[9.5px] font-semibold opacity-90">{edu.degree}</p>
-            <p className="text-[9px] opacity-70">{edu.school}</p>
-            <p className="text-[8.5px] opacity-50">{edu.startDate} – {edu.endDate}</p>
-          </div>
-        ))}
+        {data.education.map((edu, i) => {
+          const ct = showChanges ? getChangeType(changedFields, `education[${i}]`) : null;
+          return (
+            <HighlightWrap key={i} changeType={ct}>
+              <div className="mb-1.5">
+                <p className="text-[9.5px] font-semibold opacity-90">{edu.degree}</p>
+                <p className="text-[9px] opacity-70">{edu.school}</p>
+                <p className="text-[8.5px] opacity-50">{edu.startDate} – {edu.endDate}</p>
+              </div>
+            </HighlightWrap>
+          );
+        })}
       </SideSection>
     ),
     skills: () => (
       <SideSection title="Skills">
-        {data.skills.map((s, i) => (
-          <div key={i} className="mb-2">
-            <p className="text-[9px] uppercase tracking-wider mb-1 text-white/60">{s.category}</p>
-            {s.items.map((item, j) => (
-              <p key={j} className="mb-0.5 pl-2" style={{ borderLeft: `1px solid var(--resume-accent, #2a4a6b)` }}>{item}</p>
-            ))}
-          </div>
-        ))}
+        {data.skills.map((s, i) => {
+          const ct = showChanges ? getChangeType(changedFields, `skills[${i}]`) : null;
+          return (
+            <HighlightWrap key={i} changeType={ct}>
+              <div className="mb-2">
+                <p className="text-[9px] uppercase tracking-wider mb-1 text-white/60">{s.category}</p>
+                {s.items.map((item, j) => (
+                  <p key={j} className="mb-0.5 pl-2" style={{ borderLeft: `1px solid var(--resume-accent, #2a4a6b)` }}>{item}</p>
+                ))}
+              </div>
+            </HighlightWrap>
+          );
+        })}
       </SideSection>
     ),
     certifications: () => data.certifications?.length ? (
@@ -56,22 +71,32 @@ export const FinanceSidebar = ({ data, sectionOrder, changedFields, showChanges 
     ) : null,
     leadership: () => data.leadership?.length ? (
       <MainSection title="Leadership">
-        {data.leadership.map((l, i) => (
-          <div key={i} className="mb-2">
-            <p><span className="font-bold">{l.role}</span> – {l.org} ({l.date})</p>
-            <ul className="list-disc ml-4">{l.bullets.map((b, j) => <li key={j}>{b}</li>)}</ul>
-          </div>
-        ))}
+        {data.leadership.map((l, i) => {
+          const ct = showChanges ? getChangeType(changedFields, `leadership[${i}]`) : null;
+          return (
+            <HighlightWrap key={i} changeType={ct}>
+              <div className="mb-2">
+                <p><span className="font-bold">{l.role}</span> – {l.org} ({l.date})</p>
+                <ul className="list-disc ml-4">{l.bullets.map((b, j) => <li key={j}>{b}</li>)}</ul>
+              </div>
+            </HighlightWrap>
+          );
+        })}
       </MainSection>
     ) : null,
     projects: () => data.projects?.length ? (
       <MainSection title="Projects">
-        {data.projects.map((p, i) => (
-          <div key={i} className="mb-2">
-            <p className="font-bold">{p.name}{p.tech && <span className="font-normal text-[10px]"> ({p.tech})</span>}</p>
-            {p.bullets.map((b, j) => <li key={j} className="list-disc ml-4">{b}</li>)}
-          </div>
-        ))}
+        {data.projects.map((p, i) => {
+          const ct = showChanges ? getChangeType(changedFields, `projects[${i}]`) : null;
+          return (
+            <HighlightWrap key={i} changeType={ct}>
+              <div className="mb-2">
+                <p className="font-bold">{p.name}{p.tech && <span className="font-normal text-[10px]"> ({p.tech})</span>}</p>
+                {p.bullets.map((b, j) => <li key={j} className="list-disc ml-4">{b}</li>)}
+              </div>
+            </HighlightWrap>
+          );
+        })}
       </MainSection>
     ) : null,
   };
@@ -111,7 +136,7 @@ export const FinanceSidebar = ({ data, sectionOrder, changedFields, showChanges 
           if (!fn) return null;
           const content = fn();
           if (!content) return null;
-          return <HighlightWrap key={s.id} sectionId={s.id} changedFields={changedFields} showChanges={showChanges}>{content}</HighlightWrap>;
+          return <React.Fragment key={s.id}>{content}</React.Fragment>;
         })}
       </div>
       <div className="w-[70%] p-6 font-source">
@@ -120,7 +145,7 @@ export const FinanceSidebar = ({ data, sectionOrder, changedFields, showChanges 
           if (!fn) return null;
           const content = fn();
           if (!content) return null;
-          return <HighlightWrap key={s.id} sectionId={s.id} changedFields={changedFields} showChanges={showChanges}>{content}</HighlightWrap>;
+          return <React.Fragment key={s.id}>{content}</React.Fragment>;
         })}
       </div>
     </div>
