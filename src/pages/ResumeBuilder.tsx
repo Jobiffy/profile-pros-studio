@@ -480,6 +480,12 @@ const ResumeBuilder = () => {
               <Upload size={14} /> Import
             </motion.button>
 
+            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+              onClick={() => window.open("/linkedin-reviewer", "_blank")}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-[#0A66C2] hover:bg-[#0A66C2]/10 transition-all">
+              <Linkedin size={14} /> <span className="hidden sm:inline">LinkedIn</span>
+            </motion.button>
+
             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setShowColorPalette(true)}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all">
               <div className="w-3.5 h-3.5 rounded-full border border-border" style={{ background: colorPalette.accent }} />
