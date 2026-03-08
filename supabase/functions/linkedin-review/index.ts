@@ -14,70 +14,9 @@ serve(async (req) => {
   try {
     const { linkedinUrl, profileText } = await req.json();
 
-    let scrapedContent = profileText || "";
-
-    // If URL provided and no profileText, scrape via Firecrawl
-    if (linkedinUrl && !profileText) {
-      const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
-      if (!FIRECRAWL_API_KEY) {
-        return new Response(
-          JSON.stringify({ error: "Firecrawl is not configured. Please connect Firecrawl in settings." }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      let formattedUrl = linkedinUrl.trim();
-      if (!formattedUrl.startsWith("http://") && !formattedUrl.startsWith("https://")) {
-        formattedUrl = `https://${formattedUrl}`;
-      }
-
-      // Validate it's a LinkedIn URL
-      if (!formattedUrl.includes("linkedin.com/in/")) {
-        return new Response(
-          JSON.stringify({ error: "Please provide a valid LinkedIn profile URL (e.g., https://linkedin.com/in/username)" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      console.log("Scraping LinkedIn profile:", formattedUrl);
-
-      const scrapeResponse = await fetch("https://api.firecrawl.dev/v1/scrape", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          url: formattedUrl,
-          formats: ["markdown"],
-          waitFor: 3000,
-        }),
-      });
-
-      const scrapeData = await scrapeResponse.json();
-
-      if (!scrapeResponse.ok) {
-        console.error("Firecrawl error:", scrapeData);
-        return new Response(
-          JSON.stringify({ error: scrapeData.error || "Failed to fetch LinkedIn profile. The profile may be private or the URL may be incorrect." }),
-          { status: scrapeResponse.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      scrapedContent = scrapeData.data?.markdown || scrapeData.markdown || "";
-      console.log("Scraped content length:", scrapedContent.length);
-
-      if (scrapedContent.length < 50) {
-        return new Response(
-          JSON.stringify({ error: "Could not extract enough content from this LinkedIn profile. The profile may be private or restricted." }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-    }
-
-    if (!scrapedContent || scrapedContent.trim().length < 50) {
+    if (!profileText || profileText.trim().length < 50) {
       return new Response(
-        JSON.stringify({ error: "No profile content available. Please provide a LinkedIn URL or paste your profile text." }),
+        JSON.stringify({ error: "Please paste your LinkedIn profile content (at least 50 characters)." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -98,7 +37,7 @@ You MUST respond using the "linkedin_review" tool call. Do NOT respond with plai
 ${linkedinUrl ? `LinkedIn URL: ${linkedinUrl}` : ""}
 
 PROFILE CONTENT:
-${scrapedContent}
+${profileText}
 
 Evaluate every section thoroughly. For each section, identify specific issues and provide concrete improvement suggestions. Then project what the scores could be after implementing your suggestions.`;
 
@@ -125,7 +64,7 @@ Evaluate every section thoroughly. For each section, identify specific issues an
                 properties: {
                   overallScore: { type: "number", description: "Overall profile score out of 100" },
                   projectedOverallScore: { type: "number", description: "Projected overall score after implementing all suggestions, out of 100" },
-                  summary: { type: "string", description: "A brief 2-3 sentence executive summary of the profile's strengths and weaknesses" },
+                  summary: { type: "string", description: "A brief 2-3 sentence executive summary" },
                   profileName: { type: "string", description: "The name extracted from the LinkedIn profile" },
                   profileHeadline: { type: "string", description: "The headline extracted from the LinkedIn profile" },
                   sections: {
@@ -136,15 +75,15 @@ Evaluate every section thoroughly. For each section, identify specific issues an
                         name: { type: "string", description: "Section name (Headline, About/Summary, Experience, Skills, Projects, Education, Profile Completeness, Keywords/ATS Relevance, Impact & Achievements)" },
                         score: { type: "number", description: "Score out of 10" },
                         projectedScore: { type: "number", description: "Projected score after improvements out of 10" },
-                        issues: { type: "array", items: { type: "string" }, description: "List of specific issues or gaps identified" },
-                        suggestions: { type: "array", items: { type: "string" }, description: "List of specific actionable improvement suggestions" },
+                        issues: { type: "array", items: { type: "string" } },
+                        suggestions: { type: "array", items: { type: "string" } },
                       },
                       required: ["name", "score", "projectedScore", "issues", "suggestions"],
                       additionalProperties: false,
                     },
                   },
-                  topStrengths: { type: "array", items: { type: "string" }, description: "Top 3-5 strengths of the profile" },
-                  criticalImprovements: { type: "array", items: { type: "string" }, description: "Top 3-5 most critical improvements needed" },
+                  topStrengths: { type: "array", items: { type: "string" } },
+                  criticalImprovements: { type: "array", items: { type: "string" } },
                 },
                 required: ["overallScore", "projectedOverallScore", "summary", "profileName", "profileHeadline", "sections", "topStrengths", "criticalImprovements"],
                 additionalProperties: false,
@@ -162,7 +101,7 @@ Evaluate every section thoroughly. For each section, identify specific issues an
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted. Please add credits in Settings → Workspace → Usage." }),
+        return new Response(JSON.stringify({ error: "AI credits exhausted. Please add credits." }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       const text = await response.text();
