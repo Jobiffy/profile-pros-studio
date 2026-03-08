@@ -252,30 +252,40 @@ const LinkedInReviewer = () => {
               </div>
             </div>
 
-            {/* URL Input */}
+            {/* Input */}
             <Card className="p-6 space-y-4">
               <div>
-                <label className="text-sm font-medium text-foreground mb-1.5 block">LinkedIn Profile URL</label>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Linkedin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      placeholder="https://linkedin.com/in/your-profile"
-                      value={linkedinUrl}
-                      onChange={e => setLinkedinUrl(e.target.value)}
-                      onKeyDown={e => e.key === "Enter" && handleAnalyze()}
-                      className="pl-10"
-                    />
-                  </div>
+                <label className="text-sm font-medium text-foreground mb-1.5 block">LinkedIn Profile URL (optional)</label>
+                <div className="relative">
+                  <Linkedin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="https://linkedin.com/in/your-profile"
+                    value={linkedinUrl}
+                    onChange={e => setLinkedinUrl(e.target.value)}
+                    className="pl-10"
+                  />
                 </div>
-                <p className="text-xs text-muted-foreground mt-1.5">
-                  We'll automatically fetch and analyze your entire LinkedIn profile.
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-foreground mb-1.5 block">
+                  Profile Content <span className="text-destructive">*</span>
+                </label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Open your LinkedIn profile → Select all text (Ctrl+A) → Copy (Ctrl+C) → Paste below. Include headline, about, experience, education, skills, etc.
                 </p>
+                <Textarea
+                  placeholder={`Paste your full LinkedIn profile text here...\n\nTip: Go to your LinkedIn profile, press Ctrl+A to select all, then Ctrl+C to copy, and paste here.`}
+                  className="min-h-[200px] text-sm"
+                  value={profileText}
+                  onChange={e => setProfileText(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground mt-1">{profileText.length} characters</p>
               </div>
 
               <Button
                 onClick={handleAnalyze}
-                disabled={loading || !linkedinUrl.trim()}
+                disabled={loading || profileText.trim().length < 50}
                 className="w-full"
                 size="lg"
               >
