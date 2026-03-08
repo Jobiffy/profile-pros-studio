@@ -327,6 +327,106 @@ export function ResumeEditPanel(props: Props) {
             </ItemCard>
           ))}
         </SectionToggle>
+
+        {/* Custom Sections */}
+        {(data.customSections || []).map((sec, si) => (
+          <SectionToggle
+            key={`custom_${si}`}
+            icon={FileText}
+            label={sec.title || `Custom Section ${si + 1}`}
+            onAdd={() => {
+              const customs = [...(data.customSections || [])];
+              customs[si] = { ...customs[si], items: [...customs[si].items, { subtitle: "", description: "", bullets: [""] }] };
+              onUpdateField("customSections", customs);
+            }}
+            addLabel="Add Item"
+          >
+            <FieldInput
+              label="Section Title"
+              value={sec.title}
+              onChange={v => {
+                const customs = [...(data.customSections || [])];
+                customs[si] = { ...customs[si], title: v };
+                onUpdateField("customSections", customs);
+              }}
+            />
+            {sec.items.map((item, ii) => (
+              <ItemCard
+                key={ii}
+                onRemove={() => {
+                  const customs = [...(data.customSections || [])];
+                  customs[si] = { ...customs[si], items: customs[si].items.filter((_, idx) => idx !== ii) };
+                  onUpdateField("customSections", customs);
+                }}
+              >
+                <FieldInput
+                  label="Subtitle"
+                  value={item.subtitle || ""}
+                  onChange={v => {
+                    const customs = JSON.parse(JSON.stringify(data.customSections || []));
+                    customs[si].items[ii].subtitle = v;
+                    onUpdateField("customSections", customs);
+                  }}
+                />
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Description</Label>
+                  <Textarea
+                    value={item.description || ""}
+                    onChange={e => {
+                      const customs = JSON.parse(JSON.stringify(data.customSections || []));
+                      customs[si].items[ii].description = e.target.value;
+                      onUpdateField("customSections", customs);
+                    }}
+                    rows={2}
+                    className="text-xs bg-background border-border/60 resize-none"
+                    placeholder="Description..."
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Bullet Points</Label>
+                  {(item.bullets || []).map((b, bi) => (
+                    <div key={bi} className="flex gap-1 group/bullet">
+                      <span className="text-primary mt-2 text-xs">•</span>
+                      <Textarea
+                        value={b}
+                        onChange={e => {
+                          const customs = JSON.parse(JSON.stringify(data.customSections || []));
+                          const bullets = [...(customs[si].items[ii].bullets || [])];
+                          bullets[bi] = e.target.value;
+                          customs[si].items[ii].bullets = bullets;
+                          onUpdateField("customSections", customs);
+                        }}
+                        rows={2}
+                        className="text-xs bg-background border-border/60 resize-none flex-1"
+                      />
+                      <button
+                        onClick={() => {
+                          const customs = JSON.parse(JSON.stringify(data.customSections || []));
+                          customs[si].items[ii].bullets.splice(bi, 1);
+                          onUpdateField("customSections", customs);
+                        }}
+                        className="w-5 h-5 mt-1.5 rounded flex items-center justify-center text-muted-foreground opacity-0 group-hover/bullet:opacity-100 hover:text-destructive transition-all"
+                      >
+                        <X size={10} />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => {
+                      const customs = JSON.parse(JSON.stringify(data.customSections || []));
+                      if (!customs[si].items[ii].bullets) customs[si].items[ii].bullets = [];
+                      customs[si].items[ii].bullets.push("");
+                      onUpdateField("customSections", customs);
+                    }}
+                    className="text-[10px] text-muted-foreground hover:text-primary flex items-center gap-1 mt-1 transition-colors"
+                  >
+                    <Plus size={10} /> Add bullet
+                  </button>
+                </div>
+              </ItemCard>
+            ))}
+          </SectionToggle>
+        ))}
       </div>
     </ScrollArea>
   );
