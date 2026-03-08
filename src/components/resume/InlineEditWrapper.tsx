@@ -1,5 +1,6 @@
 import React, { useRef, useCallback, useEffect } from "react";
 import { ResumeData } from "@/types/resume";
+import { FloatingToolbar } from "./FloatingToolbar";
 
 interface Props {
   children: React.ReactNode;
@@ -213,8 +214,9 @@ export function InlineEditWrapper({ children, data, onEdit }: Props) {
   }, [onEdit, data, buildTextMap]);
 
   return (
-    <div ref={wrapperRef} className="inline-edit-wrapper">
+    <div ref={wrapperRef} className="inline-edit-wrapper relative">
       {children}
+      <FloatingToolbar containerRef={wrapperRef as React.RefObject<HTMLElement>} />
     </div>
   );
 }
