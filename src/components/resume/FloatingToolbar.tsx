@@ -18,6 +18,16 @@ interface FloatingToolbarProps {
   canRedo?: boolean;
 }
 
+/**
+ * Check if a contentEditable element inside the container is currently focused.
+ */
+function isEditingInline(containerRef?: React.RefObject<HTMLElement>): boolean {
+  const active = document.activeElement as HTMLElement | null;
+  if (!active || active.contentEditable !== "true") return false;
+  return containerRef?.current?.contains(active) ?? false;
+}
+
+
 export function FloatingToolbar({ containerRef, onUndo, onRedo, canUndo, canRedo }: FloatingToolbarProps) {
   const [activeFormats, setActiveFormats] = useState({ bold: false, italic: false, underline: false });
   const [showFontDropdown, setShowFontDropdown] = useState(false);
