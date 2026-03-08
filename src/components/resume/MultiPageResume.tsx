@@ -55,6 +55,7 @@ export function MultiPageResume({ children, colorPalette, previewId = "resume-pr
         {pageCount > 1 && Array.from({ length: pageCount - 1 }, (_, i) => (
           <div
             key={i}
+            data-page-indicator="true"
             className="absolute left-0 right-0 pointer-events-none z-10"
             style={{ top: `${(i + 1) * A4_HEIGHT}px` }}
           >
