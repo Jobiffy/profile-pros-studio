@@ -4,13 +4,17 @@ import { Upload, FileText, Loader2, CheckCircle2, X, AlertCircle } from "lucide-
 import { supabase } from "@/integrations/supabase/client";
 import { ResumeData } from "@/types/resume";
 import { toast } from "@/hooks/use-toast";
-import * as pdfjsLib from "pdfjs-dist";
 import mammoth from "mammoth";
 
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-
+// Dynamically load pdf.js from CDN
 async function extractTextFromPdf(file: File): Promise<string> {
+  const pdfjsLib = await import(
+    /* @vite-ignore */
+    "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.min.mjs"
+  );
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.worker.min.mjs";
+
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   let fullText = "";
@@ -55,27 +59,31 @@ export function ResumeImport({ open, onClose, onImport }: Props) {
 
       if (name.endsWith(".pdf") || file.type === "application/pdf") {
         text = await extractTextFromPdf(file);
-      } else if (name.endsWith(".docx") || file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+      } else if (
+        name.endsWith(".docx") ||
+        file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      ) {
         text = await extractTextFromDocx(file);
       } else if (name.endsWith(".doc") || file.type === "application/msword") {
-        // .doc (legacy binary format) – try mammoth; it handles some .doc files
         try {
           text = await extractTextFromDocx(file);
         } catch {
-          throw new Error("Legacy .doc format is not fully supported. Please save as .docx or .pdf and try again.");
+          throw new Error(
+            "Legacy .doc format is not fully supported. Please save as .docx or .pdf and try again."
+          );
         }
       } else {
-        // Plain text / markdown
         text = await file.text();
       }
 
       if (!text || text.trim().length < 30) {
-        throw new Error("Could not extract enough text from the file. Please try a different format (.docx or .pdf).");
+        throw new Error(
+          "Could not extract enough text from the file. Please try a different format (.docx or .pdf)."
+        );
       }
 
       setProgress(30);
 
-      // Send to AI for parsing
       const { data, error } = await supabase.functions.invoke("resume-ai", {
         body: { action: "parse-resume", rawText: text },
       });
@@ -86,17 +94,20 @@ export function ResumeImport({ open, onClose, onImport }: Props) {
       if (!data) throw new Error("No data returned from AI");
 
       setProgress(100);
-
-      // Small delay for animation
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 500));
 
       onImport(data);
-      toast({ title: "Resume imported!", description: `Successfully parsed "${file.name}"` });
+      toast({
+        title: "Resume imported!",
+        description: `Successfully parsed "${file.name}"`,
+      });
       onClose();
     } catch (e: any) {
+      console.error("Import error:", e);
       toast({
         title: "Import failed",
-        description: e.message || "Could not parse the resume. Try a .docx or .pdf format.",
+        description:
+          e.message || "Could not parse the resume. Try a .docx or .pdf format.",
         variant: "destructive",
       });
     } finally {
@@ -136,18 +147,26 @@ export function ResumeImport({ open, onClose, onImport }: Props) {
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           transition={{ type: "spring", damping: 25 }}
           className="bg-card border border-border rounded-2xl p-6 max-w-lg w-full shadow-2xl"
-          onClick={e => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between mb-5">
-            <h2 className="text-lg font-semibold text-foreground">Import Resume</h2>
-            <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
+            <h2 className="text-lg font-semibold text-foreground">
+              Import Resume
+            </h2>
+            <button
+              onClick={onClose}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
               <X size={18} />
             </button>
           </div>
 
           {!parsing ? (
             <div
-              onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOver(true);
+              }}
               onDragLeave={() => setDragOver(false)}
               onDrop={handleDrop}
               onClick={() => fileRef.current?.click()}
@@ -165,7 +184,9 @@ export function ResumeImport({ open, onClose, onImport }: Props) {
                 className="hidden"
               />
               <motion.div
-                animate={dragOver ? { scale: 1.1, y: -5 } : { scale: 1, y: 0 }}
+                animate={
+                  dragOver ? { scale: 1.1, y: -5 } : { scale: 1, y: 0 }
+                }
                 className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4"
               >
                 <Upload size={28} className="text-primary" />
@@ -181,13 +202,21 @@ export function ResumeImport({ open, onClose, onImport }: Props) {
             <div className="py-8 text-center">
               <motion.div
                 animate={{ rotate: 360 }}
-                transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+                transition={{
+                  repeat: Infinity,
+                  duration: 1.5,
+                  ease: "linear",
+                }}
                 className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4"
               >
                 <Loader2 size={28} className="text-primary" />
               </motion.div>
-              <p className="text-sm font-medium text-foreground mb-1">Parsing "{fileName}"</p>
-              <p className="text-xs text-muted-foreground mb-4">AI is extracting your resume data...</p>
+              <p className="text-sm font-medium text-foreground mb-1">
+                Parsing "{fileName}"
+              </p>
+              <p className="text-xs text-muted-foreground mb-4">
+                AI is extracting your resume data...
+              </p>
               <div className="w-full max-w-xs mx-auto h-2 rounded-full bg-border overflow-hidden">
                 <motion.div
                   className="h-full rounded-full bg-primary"
@@ -197,11 +226,18 @@ export function ResumeImport({ open, onClose, onImport }: Props) {
                 />
               </div>
               <div className="mt-4 space-y-2">
-                {["Reading file content", "Extracting sections", "Structuring data"].map((step, i) => (
+                {[
+                  "Reading file content",
+                  "Extracting sections",
+                  "Structuring data",
+                ].map((step, i) => (
                   <motion.div
                     key={i}
                     initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: progress > (i + 1) * 25 ? 1 : 0.3, x: 0 }}
+                    animate={{
+                      opacity: progress > (i + 1) * 25 ? 1 : 0.3,
+                      x: 0,
+                    }}
                     transition={{ delay: i * 0.3 }}
                     className="flex items-center gap-2 text-xs text-muted-foreground justify-center"
                   >
@@ -218,9 +254,14 @@ export function ResumeImport({ open, onClose, onImport }: Props) {
           )}
 
           <div className="mt-4 flex items-start gap-2 p-3 rounded-lg bg-muted/40 border border-border/30">
-            <AlertCircle size={14} className="text-muted-foreground shrink-0 mt-0.5" />
+            <AlertCircle
+              size={14}
+              className="text-muted-foreground shrink-0 mt-0.5"
+            />
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Our AI will parse your resume and map it to the selected template. For best results, use a well-structured resume. You can edit any field after import.
+              Our AI will parse your resume and map it to the selected template.
+              For best results, use a well-structured resume. You can edit any
+              field after import.
             </p>
           </div>
         </motion.div>
