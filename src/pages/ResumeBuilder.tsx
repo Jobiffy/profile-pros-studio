@@ -57,6 +57,7 @@ const ResumeBuilder = () => {
     resumeData, setResumeData, updateHeader, updateSummary, updateExperience, updateEducation, updateField,
     colorPalette, setColorPalette, customColor, applyCustomColor,
     changedFields, showChanges, setShowChanges, clearChanges, markChanged,
+    undo, redo, canUndo, canRedo,
   } = resumeState;
 
   // Sync resume data from store when switching resumes
@@ -488,7 +489,7 @@ const ResumeBuilder = () => {
 
         {/* Formatting Toolbar */}
         <div className="shrink-0 flex items-center justify-center px-4 py-1.5 border-b border-border bg-card/60">
-          <FloatingToolbar containerRef={previewContainerRef} />
+          <FloatingToolbar containerRef={previewContainerRef} onUndo={undo} onRedo={redo} canUndo={canUndo} canRedo={canRedo} />
         </div>
         <LinkContextMenu containerRef={previewContainerRef} />
 
