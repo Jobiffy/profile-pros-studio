@@ -236,7 +236,7 @@ export function FloatingToolbar({ containerRef }: FloatingToolbarProps) {
       {/* Hyperlink */}
       <div className="relative">
         <button
-          onClick={() => { setShowLinkInput(!showLinkInput); setShowFontDropdown(false); setShowSizeDropdown(false); }}
+          onClick={handleOpenLinkInput}
           className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${disabledClass} text-popover-foreground hover:bg-accent/50`}
           title="Insert Link"
         >

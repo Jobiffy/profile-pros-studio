@@ -7,7 +7,15 @@ import { ResumeData } from "@/types/resume";
 export async function exportToPDF(elementId: string, fileName = "resume.pdf") {
   const el = document.getElementById(elementId);
   if (!el) return;
+
+  // Hide page-break indicators before capturing
+  const indicators = el.querySelectorAll<HTMLElement>("[data-page-indicator]");
+  indicators.forEach(ind => ind.style.display = "none");
+
   const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+
+  // Restore indicators
+  indicators.forEach(ind => ind.style.display = "");
   const imgData = canvas.toDataURL("image/png");
   
   const pageWidthPx = 794; // A4 width in px
