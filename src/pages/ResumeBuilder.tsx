@@ -15,6 +15,7 @@ import { ResumeImport } from "@/components/resume/ResumeImport";
 import { MultiPageResume } from "@/components/resume/MultiPageResume";
 import { InlineEditWrapper } from "@/components/resume/InlineEditWrapper";
 import { FloatingToolbar } from "@/components/resume/FloatingToolbar";
+import { LinkContextMenu } from "@/components/resume/LinkContextMenu";
 import { ColorPalettePanel } from "@/components/resume/ColorPalette";
 import { SectionManager, SectionItem, getDefaultSections } from "@/components/resume/SectionManager";
 import { exportToPDF, exportToDOCX } from "@/lib/exportResume";
@@ -489,6 +490,7 @@ const ResumeBuilder = () => {
         <div className="shrink-0 flex items-center justify-center px-4 py-1.5 border-b border-border bg-card/60">
           <FloatingToolbar containerRef={previewContainerRef} />
         </div>
+        <LinkContextMenu containerRef={previewContainerRef} />
 
         {/* Preview Area */}
         <div ref={previewContainerRef} className="flex-1 overflow-auto flex justify-center items-start py-8 px-4 bg-muted/30 relative">

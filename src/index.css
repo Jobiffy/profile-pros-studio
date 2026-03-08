@@ -134,3 +134,13 @@
 .pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
 }
+
+/* Links inside resume preview */
+.inline-edit-wrapper a {
+  color: hsl(217 91% 50%);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.inline-edit-wrapper a:hover {
+  color: hsl(217 91% 40%);
+}
