@@ -5,7 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState } from "react";
 import { Briefcase, Code, Layout, GraduationCap, Heart, Search, TrendingUp, BarChart3, LineChart, Package, Check } from "lucide-react";
 
-type CategoryFilter = "all" | "marketing" | "sales" | "consulting" | "pm" | "tech" | "hr" | "freshers" | "generic";
+type CategoryFilter = "all" | "marketing" | "sales" | "consulting" | "pm" | "tech" | "hr" | "freshers" | "generic" | "finance" | "operations" | "project_management";
 
 const categoryMeta: Record<string, { icon: any; label: string }> = {
   all: { icon: Layout, label: "All" },
@@ -14,6 +14,9 @@ const categoryMeta: Record<string, { icon: any; label: string }> = {
   consulting: { icon: LineChart, label: "Consulting" },
   pm: { icon: Package, label: "Product" },
   tech: { icon: Code, label: "Tech" },
+  finance: { icon: BarChart3, label: "Finance" },
+  operations: { icon: Package, label: "Operations" },
+  project_management: { icon: Briefcase, label: "Project Mgmt" },
   hr: { icon: Heart, label: "HR Picks" },
   freshers: { icon: GraduationCap, label: "Freshers" },
   generic: { icon: Briefcase, label: "Generic" },

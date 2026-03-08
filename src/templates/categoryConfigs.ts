@@ -126,6 +126,54 @@ export const newGenericTemplates: CategoryTemplateConfig[] = [
   { id: "gen-twotone", name: "Two-Tone Pro", category: "generic", description: "Two-tone professional sidebar layout", preview: "#004D40", layout: "sidebar", fontBody: "'Verdana', sans-serif", fontHeading: "'Verdana', sans-serif", defaultAccent: "#004D40", headerAlign: "left", sectionStyle: "bold", bulletStyle: "disc", sidebarSide: "right", sidebarBg: "#004D40" },
 ];
 
+// ═══════════════════════════════════════
+// FINANCE TEMPLATES (10)
+// ═══════════════════════════════════════
+export const financeTemplates: CategoryTemplateConfig[] = [
+  { id: "fin-investment-banker", name: "Investment Banker", category: "finance", description: "Conservative Wall Street banking layout", preview: "#0D1B2A", layout: "single", fontBody: "'Georgia', serif", fontHeading: "'Georgia', serif", defaultAccent: "#0D1B2A", headerAlign: "center", sectionStyle: "line", bulletStyle: "disc" },
+  { id: "fin-equity-analyst", name: "Equity Analyst", category: "finance", description: "Metrics-driven equity research layout", preview: "#1B3A5C", layout: "single", fontBody: "'Palatino', serif", fontHeading: "'Palatino', serif", defaultAccent: "#1B3A5C", headerAlign: "left", sectionStyle: "bold", bulletStyle: "disc" },
+  { id: "fin-pe-vc", name: "PE / Venture Capital", category: "finance", description: "Private equity and VC deal-focused", preview: "#263238", layout: "banner", fontBody: "'Georgia', serif", fontHeading: "'Georgia', serif", defaultAccent: "#263238", headerAlign: "left", sectionStyle: "line", bulletStyle: "disc" },
+  { id: "fin-fp-analyst", name: "FP&A Analyst", category: "finance", description: "Financial planning and analysis layout", preview: "#004D40", layout: "sidebar", fontBody: "'system-ui', sans-serif", fontHeading: "'system-ui', sans-serif", defaultAccent: "#004D40", headerAlign: "left", sectionStyle: "bold", bulletStyle: "disc", sidebarSide: "left", sidebarBg: "#004D40" },
+  { id: "fin-risk-mgr", name: "Risk Manager", category: "finance", description: "Risk and compliance management focus", preview: "#4E342E", layout: "single", fontBody: "'Verdana', sans-serif", fontHeading: "'Verdana', sans-serif", defaultAccent: "#4E342E", headerAlign: "center", sectionStyle: "line", bulletStyle: "square" },
+  { id: "fin-cfo-exec", name: "CFO Executive", category: "finance", description: "C-suite financial executive layout", preview: "#1A237E", layout: "banner", fontBody: "'Palatino', serif", fontHeading: "'Georgia', serif", defaultAccent: "#1A237E", headerAlign: "left", sectionStyle: "bold", bulletStyle: "disc" },
+  { id: "fin-wealth-mgmt", name: "Wealth Management", category: "finance", description: "Wealth advisory and client-facing", preview: "#B8860B", layout: "sidebar", fontBody: "'Georgia', serif", fontHeading: "'Georgia', serif", defaultAccent: "#B8860B", headerAlign: "left", sectionStyle: "dot", bulletStyle: "disc", sidebarSide: "right", sidebarBg: "#5D4037" },
+  { id: "fin-quant", name: "Quantitative Analyst", category: "finance", description: "Quant and algorithmic trading focus", preview: "#0277BD", layout: "single", fontBody: "'system-ui', sans-serif", fontHeading: "'system-ui', sans-serif", defaultAccent: "#0277BD", headerAlign: "left", sectionStyle: "accent", bulletStyle: "arrow" },
+  { id: "fin-audit", name: "Audit & Compliance", category: "finance", description: "Auditing and regulatory compliance", preview: "#37474F", layout: "minimal", fontBody: "'Arial', sans-serif", fontHeading: "'Arial', sans-serif", defaultAccent: "#37474F", headerAlign: "left", sectionStyle: "minimal", bulletStyle: "dash" },
+  { id: "fin-controller", name: "Financial Controller", category: "finance", description: "Accounting and controllership layout", preview: "#1B5E20", layout: "single", fontBody: "'Georgia', serif", fontHeading: "'Georgia', serif", defaultAccent: "#1B5E20", headerAlign: "center", sectionStyle: "bold", bulletStyle: "disc" },
+];
+
+// ═══════════════════════════════════════
+// OPERATIONS TEMPLATES (10)
+// ═══════════════════════════════════════
+export const operationsTemplates: CategoryTemplateConfig[] = [
+  { id: "ops-supply-chain", name: "Supply Chain Manager", category: "operations", description: "Logistics and supply chain management", preview: "#00695C", layout: "single", fontBody: "'system-ui', sans-serif", fontHeading: "'system-ui', sans-serif", defaultAccent: "#00695C", headerAlign: "left", sectionStyle: "bold", bulletStyle: "disc" },
+  { id: "ops-lean-six", name: "Lean Six Sigma", category: "operations", description: "Process improvement and lean methodology", preview: "#2E7D32", layout: "banner", fontBody: "'Arial', sans-serif", fontHeading: "'Arial', sans-serif", defaultAccent: "#2E7D32", headerAlign: "left", sectionStyle: "line", bulletStyle: "arrow" },
+  { id: "ops-director", name: "Operations Director", category: "operations", description: "Senior operations leadership layout", preview: "#1A237E", layout: "banner", fontBody: "'Palatino', serif", fontHeading: "'Georgia', serif", defaultAccent: "#1A237E", headerAlign: "left", sectionStyle: "bold", bulletStyle: "disc" },
+  { id: "ops-logistics", name: "Logistics Coordinator", category: "operations", description: "Logistics and distribution focus", preview: "#E65100", layout: "single", fontBody: "'Verdana', sans-serif", fontHeading: "'Verdana', sans-serif", defaultAccent: "#E65100", headerAlign: "center", sectionStyle: "dot", bulletStyle: "disc" },
+  { id: "ops-manufacturing", name: "Manufacturing Ops", category: "operations", description: "Manufacturing operations management", preview: "#37474F", layout: "sidebar", fontBody: "'system-ui', sans-serif", fontHeading: "'system-ui', sans-serif", defaultAccent: "#37474F", headerAlign: "left", sectionStyle: "bold", bulletStyle: "square", sidebarSide: "left", sidebarBg: "#37474F" },
+  { id: "ops-procurement", name: "Procurement Manager", category: "operations", description: "Procurement and vendor management", preview: "#4E342E", layout: "single", fontBody: "'Georgia', serif", fontHeading: "'Georgia', serif", defaultAccent: "#4E342E", headerAlign: "left", sectionStyle: "line", bulletStyle: "disc" },
+  { id: "ops-quality", name: "Quality Assurance", category: "operations", description: "Quality control and assurance focus", preview: "#0D47A1", layout: "minimal", fontBody: "'system-ui', sans-serif", fontHeading: "'system-ui', sans-serif", defaultAccent: "#0D47A1", headerAlign: "left", sectionStyle: "minimal", bulletStyle: "dash" },
+  { id: "ops-warehouse", name: "Warehouse Manager", category: "operations", description: "Warehouse and inventory management", preview: "#5D4037", layout: "single", fontBody: "'Trebuchet MS', sans-serif", fontHeading: "'Trebuchet MS', sans-serif", defaultAccent: "#5D4037", headerAlign: "center", sectionStyle: "accent", bulletStyle: "disc" },
+  { id: "ops-business", name: "Business Operations", category: "operations", description: "Cross-functional business ops layout", preview: "#283593", layout: "sidebar", fontBody: "'system-ui', sans-serif", fontHeading: "'system-ui', sans-serif", defaultAccent: "#283593", headerAlign: "left", sectionStyle: "dot", bulletStyle: "arrow", sidebarSide: "right", sidebarBg: "#283593" },
+  { id: "ops-facilities", name: "Facilities Manager", category: "operations", description: "Facilities and office management", preview: "#33691E", layout: "banner", fontBody: "'Arial', sans-serif", fontHeading: "'Arial', sans-serif", defaultAccent: "#33691E", headerAlign: "left", sectionStyle: "line", bulletStyle: "disc" },
+];
+
+// ═══════════════════════════════════════
+// PROJECT MANAGEMENT TEMPLATES (10)
+// ═══════════════════════════════════════
+export const projectManagementTemplates: CategoryTemplateConfig[] = [
+  { id: "projm-pmp", name: "PMP Certified", category: "project_management", description: "PMP-focused project management layout", preview: "#1565C0", layout: "single", fontBody: "'system-ui', sans-serif", fontHeading: "'system-ui', sans-serif", defaultAccent: "#1565C0", headerAlign: "center", sectionStyle: "bold", bulletStyle: "disc" },
+  { id: "projm-agile-master", name: "Agile Scrum Master", category: "project_management", description: "Scrum master and agile coach layout", preview: "#F57F17", layout: "banner", fontBody: "'system-ui', sans-serif", fontHeading: "'system-ui', sans-serif", defaultAccent: "#F57F17", headerAlign: "left", sectionStyle: "accent", bulletStyle: "arrow" },
+  { id: "projm-it-pm", name: "IT Project Manager", category: "project_management", description: "IT and software project management", preview: "#0277BD", layout: "single", fontBody: "'Verdana', sans-serif", fontHeading: "'Verdana', sans-serif", defaultAccent: "#0277BD", headerAlign: "left", sectionStyle: "line", bulletStyle: "disc" },
+  { id: "projm-construction", name: "Construction PM", category: "project_management", description: "Construction and infrastructure project", preview: "#E65100", layout: "sidebar", fontBody: "'Arial', sans-serif", fontHeading: "'Arial', sans-serif", defaultAccent: "#E65100", headerAlign: "left", sectionStyle: "bold", bulletStyle: "square", sidebarSide: "left", sidebarBg: "#E65100" },
+  { id: "projm-senior", name: "Senior PM", category: "project_management", description: "Senior project manager leadership", preview: "#1A237E", layout: "banner", fontBody: "'Palatino', serif", fontHeading: "'Georgia', serif", defaultAccent: "#1A237E", headerAlign: "left", sectionStyle: "bold", bulletStyle: "disc" },
+  { id: "projm-program", name: "Program Manager", category: "project_management", description: "Multi-project program management", preview: "#4A148C", layout: "single", fontBody: "'Georgia', serif", fontHeading: "'Georgia', serif", defaultAccent: "#4A148C", headerAlign: "center", sectionStyle: "dot", bulletStyle: "disc" },
+  { id: "projm-waterfall", name: "Waterfall PM", category: "project_management", description: "Traditional waterfall methodology PM", preview: "#37474F", layout: "minimal", fontBody: "'system-ui', sans-serif", fontHeading: "'system-ui', sans-serif", defaultAccent: "#37474F", headerAlign: "left", sectionStyle: "minimal", bulletStyle: "dash" },
+  { id: "projm-digital", name: "Digital PM", category: "project_management", description: "Digital transformation PM layout", preview: "#311B92", layout: "sidebar", fontBody: "'system-ui', sans-serif", fontHeading: "'system-ui', sans-serif", defaultAccent: "#311B92", headerAlign: "left", sectionStyle: "accent", bulletStyle: "arrow", sidebarSide: "right", sidebarBg: "#311B92" },
+  { id: "projm-healthcare", name: "Healthcare PM", category: "project_management", description: "Healthcare industry project manager", preview: "#00695C", layout: "single", fontBody: "'Trebuchet MS', sans-serif", fontHeading: "'Trebuchet MS', sans-serif", defaultAccent: "#00695C", headerAlign: "left", sectionStyle: "line", bulletStyle: "disc" },
+  { id: "projm-pmo", name: "PMO Director", category: "project_management", description: "PMO leadership and governance", preview: "#212121", layout: "banner", fontBody: "'Georgia', serif", fontHeading: "'Palatino', serif", defaultAccent: "#212121", headerAlign: "left", sectionStyle: "bold", bulletStyle: "disc" },
+];
+
 // All factory-generated templates combined
 export const allCategoryTemplates = [
   ...marketingTemplates,
@@ -136,4 +184,7 @@ export const allCategoryTemplates = [
   ...hrTemplates,
   ...freshersTemplates,
   ...newGenericTemplates,
+  ...financeTemplates,
+  ...operationsTemplates,
+  ...projectManagementTemplates,
 ];
