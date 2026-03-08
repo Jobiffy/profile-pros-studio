@@ -277,8 +277,24 @@ serve(async (req) => {
     if (action === "parse-resume") {
       if (!rawText) throw new Error("Raw text is required for parsing");
       useTools = true;
-      systemPrompt = `You are an expert resume parser. Extract all information from the raw resume text and structure it precisely. Be thorough — extract every section, every bullet point, every detail.`;
-      userPrompt = `Parse the following resume text into structured data. Extract EVERYTHING:\n\n${rawText}`;
+      systemPrompt = `You are an expert resume parser. Your job is to extract ALL information from the provided resume text with 100% accuracy.
+
+CRITICAL RULES:
+1. Extract data from ALL pages — the text may span multiple pages. Do not stop at the first page.
+2. Parse every section completely — every bullet point, every date, every detail.
+3. Handle various layouts: single-column, two-column, tables, creative/Canva templates, Word templates.
+4. Clean up formatting artifacts: fix broken words, merge split lines, remove page numbers/headers/footers.
+5. For the header: extract name, job title/headline, email, phone, LinkedIn URL, GitHub URL, portfolio/website URL, and location. Look for these across the entire document — some resumes put contact info in sidebars or footers.
+6. For experience: extract ALL positions with full bullet points. Preserve the original meaning and metrics.
+7. For education: extract degree, school, dates, GPA if present, and any honors/details.
+8. For skills: group by category if the resume does so, otherwise create logical categories (e.g., "Programming Languages", "Tools & Frameworks", "Soft Skills").
+9. For projects: extract name, description, technologies used, and bullet points.
+10. For certifications: extract all certifications, licenses, and professional development items.
+11. For leadership: extract volunteer roles, club leadership, organizational roles.
+12. IMPORTANT: If any content does NOT fit into the standard sections (summary, experience, education, skills, projects, certifications, leadership), place it in "customSections" with the original section title. Examples: Awards, Publications, Languages, Volunteer Work, Interests, References, Honors.
+13. NEVER drop or skip any content. Every piece of information must appear somewhere in the output.
+14. If a section heading is ambiguous, use your best judgment to categorize it, or put it in customSections.`;
+      userPrompt = `Parse the following resume text into structured data. Extract EVERYTHING from ALL pages. Do not skip any content.\n\n---\n${rawText}\n---`;
       tools = [resumeToolSchema];
       toolChoice = { type: "function", function: { name: "parsed_resume" } };
 
