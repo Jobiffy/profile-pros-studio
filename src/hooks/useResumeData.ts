@@ -283,6 +283,6 @@ export function useResumeData() {
     // Changes
     changedFields, showChanges, setShowChanges, clearChanges, markChanged,
     // Undo/Redo
-    undo, redo, canUndo, canRedo,
+    undo, redo, canUndo, canRedo, resetHistory,
   };
 }
