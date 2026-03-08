@@ -213,11 +213,17 @@ const ResumeBuilder = () => {
     });
   }, [sendChatMessage, updateField, markChanged, setResumeData, setShowChanges]);
 
-  const handleImport = (data: any) => {
+  const handleImport = (data: any, fileName?: string) => {
+    // Replace current resume content with parsed data
     setResumeData(data);
-    // When importing a new resume, create a new resume tab
-    const name = data.header?.name ? `${data.header.name}'s Resume` : "Imported Resume";
-    resumeStore.addResume(name, data);
+    resetHistory(data);
+    // Name resume after uploaded file
+    const baseName = fileName
+      ? fileName.replace(/\.[^.]+$/, "")
+      : data.header?.name
+        ? `${data.header.name}'s Resume`
+        : "Imported Resume";
+    resumeStore.renameResume(resumeStore.activeId, baseName);
   };
 
   const handleTailorResume = async (jd: string) => {
