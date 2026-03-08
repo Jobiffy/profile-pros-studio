@@ -14,6 +14,7 @@ import { OnboardingTour } from "@/components/resume/OnboardingTour";
 import { ResumeImport } from "@/components/resume/ResumeImport";
 import { MultiPageResume } from "@/components/resume/MultiPageResume";
 import { InlineEditWrapper } from "@/components/resume/InlineEditWrapper";
+import { FloatingToolbar } from "@/components/resume/FloatingToolbar";
 import { ColorPalettePanel } from "@/components/resume/ColorPalette";
 import { SectionManager, SectionItem, getDefaultSections } from "@/components/resume/SectionManager";
 import { exportToPDF, exportToDOCX } from "@/lib/exportResume";
