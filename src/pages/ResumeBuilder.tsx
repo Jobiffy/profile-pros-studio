@@ -57,7 +57,7 @@ const ResumeBuilder = () => {
     resumeData, setResumeData, updateHeader, updateSummary, updateExperience, updateEducation, updateField,
     colorPalette, setColorPalette, customColor, applyCustomColor,
     changedFields, showChanges, setShowChanges, clearChanges, markChanged,
-    undo, redo, canUndo, canRedo,
+    undo, redo, canUndo, canRedo, resetHistory,
   } = resumeState;
 
   // Sync resume data from store when switching resumes
@@ -65,8 +65,14 @@ const ResumeBuilder = () => {
     if (resumeStore.activeResume) {
       setResumeData(resumeStore.activeResume.data);
       clearChanges();
+      resetHistory(resumeStore.activeResume.data);
     }
   }, [resumeStore.activeId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reset history when template changes (undo should not switch templates)
+  useEffect(() => {
+    resetHistory(resumeData);
+  }, [selectedTemplate.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Persist resume data to store on changes
   useEffect(() => {

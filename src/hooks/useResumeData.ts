@@ -57,6 +57,13 @@ export function useResumeData() {
     setHistoryVersion(v => v + 1);
   }, []);
 
+  const resetHistory = useCallback((data?: ResumeData) => {
+    const snapshot = data ? JSON.stringify(data) : JSON.stringify(sampleResume);
+    historyRef.current = [snapshot];
+    historyIndexRef.current = 0;
+    setHistoryVersion(v => v + 1);
+  }, []);
+
   const canUndo = historyIndexRef.current > 0;
   const canRedo = historyIndexRef.current < historyRef.current.length - 1;
 
@@ -276,6 +283,6 @@ export function useResumeData() {
     // Changes
     changedFields, showChanges, setShowChanges, clearChanges, markChanged,
     // Undo/Redo
-    undo, redo, canUndo, canRedo,
+    undo, redo, canUndo, canRedo, resetHistory,
   };
 }
