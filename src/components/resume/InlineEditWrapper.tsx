@@ -1,6 +1,5 @@
 import React, { useRef, useCallback, useEffect } from "react";
 import { ResumeData } from "@/types/resume";
-import { FloatingToolbar } from "./FloatingToolbar";
 
 interface Props {
   children: React.ReactNode;
