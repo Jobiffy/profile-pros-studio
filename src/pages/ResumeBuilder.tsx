@@ -39,6 +39,7 @@ const ResumeBuilder = () => {
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [previewScale, setPreviewScale] = useState(0.65);
   const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains("dark"));
+  const previewContainerRef = useRef<HTMLDivElement>(null);
 
   const toggleTheme = useCallback(() => {
     const next = !darkMode;
