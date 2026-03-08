@@ -151,6 +151,27 @@ const ResumeBuilder = () => {
     }
   }, []);
 
+  // Keyboard shortcuts: Ctrl+Z / Ctrl+Y for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
+        // If editing inline (contentEditable), let browser handle it
+        const active = document.activeElement as HTMLElement;
+        if (active?.contentEditable === "true") return;
+        e.preventDefault();
+        undo();
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.key === "z" && e.shiftKey))) {
+        const active = document.activeElement as HTMLElement;
+        if (active?.contentEditable === "true") return;
+        e.preventDefault();
+        redo();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [undo, redo]);
+
   const handleOnboardingComplete = () => {
     setShowOnboarding(false);
     localStorage.setItem("jobiffy-onboarded", "true");
