@@ -20,6 +20,7 @@ export function FloatingToolbar({ containerRef }: FloatingToolbarProps) {
   const [showSizeDropdown, setShowSizeDropdown] = useState(false);
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
+  const [savedRange, setSavedRange] = useState<Range | null>(null);
   const [currentFont, setCurrentFont] = useState("");
   const [currentSize, setCurrentSize] = useState("");
   const [hasSelection, setHasSelection] = useState(false);
@@ -97,12 +98,37 @@ export function FloatingToolbar({ containerRef }: FloatingToolbarProps) {
     setShowSizeDropdown(false);
   };
 
+  const handleOpenLinkInput = () => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+      setSavedRange(sel.getRangeAt(0).cloneRange());
+    }
+    setShowLinkInput(!showLinkInput);
+    setShowFontDropdown(false);
+    setShowSizeDropdown(false);
+  };
+
   const handleInsertLink = () => {
-    if (!linkUrl.trim()) return;
+    if (!linkUrl.trim() || !savedRange) return;
     const url = linkUrl.startsWith("http") ? linkUrl : `https://${linkUrl}`;
-    applyCommand("createLink", url);
+    const sel = window.getSelection();
+    if (sel) {
+      sel.removeAllRanges();
+      sel.addRange(savedRange);
+    }
+    document.execCommand("createLink", false, url);
+    // Style the link
+    if (sel && sel.anchorNode) {
+      const anchor = sel.anchorNode.parentElement?.closest("a") || sel.anchorNode.parentElement;
+      if (anchor && anchor.tagName === "A") {
+        (anchor as HTMLElement).style.color = "hsl(var(--primary))";
+        (anchor as HTMLElement).style.textDecoration = "underline";
+        (anchor as HTMLElement).setAttribute("target", "_blank");
+      }
+    }
     setLinkUrl("");
     setShowLinkInput(false);
+    setSavedRange(null);
   };
 
   const truncateFont = (f: string) => f.length > 10 ? f.slice(0, 10) + "…" : f;
@@ -210,7 +236,7 @@ export function FloatingToolbar({ containerRef }: FloatingToolbarProps) {
       {/* Hyperlink */}
       <div className="relative">
         <button
-          onClick={() => { setShowLinkInput(!showLinkInput); setShowFontDropdown(false); setShowSizeDropdown(false); }}
+          onClick={handleOpenLinkInput}
           className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${disabledClass} text-popover-foreground hover:bg-accent/50`}
           title="Insert Link"
         >
