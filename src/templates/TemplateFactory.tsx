@@ -466,7 +466,7 @@ export interface TemplateExtraProps {
 }
 
 export function createTemplate(config: TemplateStyleConfig): React.FC<{ data: ResumeData } & TemplateExtraProps> {
-  const Component: React.FC<{ data: ResumeData } & TemplateExtraProps> = ({ data, sectionOrder, changedFields, showChanges }) => {
+  const Component: React.FC<{ data: ResumeData } & TemplateExtraProps> = ({ data, sectionOrder, changedFields, showChanges, onInlineEdit }) => {
     // Enhanced layouts that use sectionOrder + highlighting
     const c = config.defaultAccent;
     switch (config.layout) {
