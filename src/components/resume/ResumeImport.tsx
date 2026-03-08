@@ -8,10 +8,8 @@ import mammoth from "mammoth";
 
 // Dynamically load pdf.js from CDN
 async function extractTextFromPdf(file: File): Promise<string> {
-  const pdfjsLib = await import(
-    /* @vite-ignore */
-    "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.min.mjs"
-  );
+  // @ts-ignore - dynamic CDN import
+  const pdfjsLib = await import(/* @vite-ignore */ "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.min.mjs");
   pdfjsLib.GlobalWorkerOptions.workerSrc =
     "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.worker.min.mjs";
 
