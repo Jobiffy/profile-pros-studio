@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -150,31 +151,27 @@ const SectionCard = ({ section, index }: { section: SectionReview; index: number
 const LinkedInReviewer = () => {
   const navigate = useNavigate();
   const [linkedinUrl, setLinkedinUrl] = useState("");
+  const [profileText, setProfileText] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState("");
   const [result, setResult] = useState<LinkedInReviewResult | null>(null);
 
   const handleAnalyze = async () => {
-    const url = linkedinUrl.trim();
-    if (!url) {
-      toast({ title: "URL Required", description: "Please enter your LinkedIn profile URL.", variant: "destructive" });
-      return;
-    }
-    if (!url.includes("linkedin.com/in/")) {
-      toast({ title: "Invalid URL", description: "Please enter a valid LinkedIn profile URL (e.g. linkedin.com/in/username).", variant: "destructive" });
+    if (!profileText.trim() || profileText.trim().length < 50) {
+      toast({ title: "More content needed", description: "Please paste your full LinkedIn profile content (at least 50 characters).", variant: "destructive" });
       return;
     }
 
     setLoading(true);
     setResult(null);
-    setLoadingStep("Fetching your LinkedIn profile...");
+    setLoadingStep("Analyzing profile sections with AI...");
 
     try {
-      setTimeout(() => setLoadingStep("Analyzing profile sections with AI..."), 4000);
-      setTimeout(() => setLoadingStep("Generating scores & recommendations..."), 8000);
+      setTimeout(() => setLoadingStep("Scoring each section..."), 3000);
+      setTimeout(() => setLoadingStep("Generating recommendations..."), 6000);
 
       const { data, error } = await supabase.functions.invoke("linkedin-review", {
-        body: { linkedinUrl: url },
+        body: { linkedinUrl: linkedinUrl.trim() || undefined, profileText },
       });
       if (error) throw new Error(typeof error === "object" && error.message ? error.message : "Analysis failed");
       if (data?.error) throw new Error(data.error);
@@ -255,30 +252,40 @@ const LinkedInReviewer = () => {
               </div>
             </div>
 
-            {/* URL Input */}
+            {/* Input */}
             <Card className="p-6 space-y-4">
               <div>
-                <label className="text-sm font-medium text-foreground mb-1.5 block">LinkedIn Profile URL</label>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Linkedin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      placeholder="https://linkedin.com/in/your-profile"
-                      value={linkedinUrl}
-                      onChange={e => setLinkedinUrl(e.target.value)}
-                      onKeyDown={e => e.key === "Enter" && handleAnalyze()}
-                      className="pl-10"
-                    />
-                  </div>
+                <label className="text-sm font-medium text-foreground mb-1.5 block">LinkedIn Profile URL (optional)</label>
+                <div className="relative">
+                  <Linkedin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="https://linkedin.com/in/your-profile"
+                    value={linkedinUrl}
+                    onChange={e => setLinkedinUrl(e.target.value)}
+                    className="pl-10"
+                  />
                 </div>
-                <p className="text-xs text-muted-foreground mt-1.5">
-                  We'll automatically fetch and analyze your entire LinkedIn profile.
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-foreground mb-1.5 block">
+                  Profile Content <span className="text-destructive">*</span>
+                </label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Open your LinkedIn profile → Select all text (Ctrl+A) → Copy (Ctrl+C) → Paste below. Include headline, about, experience, education, skills, etc.
                 </p>
+                <Textarea
+                  placeholder={`Paste your full LinkedIn profile text here...\n\nTip: Go to your LinkedIn profile, press Ctrl+A to select all, then Ctrl+C to copy, and paste here.`}
+                  className="min-h-[200px] text-sm"
+                  value={profileText}
+                  onChange={e => setProfileText(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground mt-1">{profileText.length} characters</p>
               </div>
 
               <Button
                 onClick={handleAnalyze}
-                disabled={loading || !linkedinUrl.trim()}
+                disabled={loading || profileText.trim().length < 50}
                 className="w-full"
                 size="lg"
               >
@@ -304,9 +311,9 @@ const LinkedInReviewer = () => {
             {/* How it works */}
             <div className="grid grid-cols-3 gap-3 pt-4">
               {[
-                { step: "1", title: "Paste URL", desc: "Enter your LinkedIn profile link" },
-                { step: "2", title: "AI Analyzes", desc: "We fetch & score every section" },
-                { step: "3", title: "Get Results", desc: "Detailed feedback & improvements" },
+                { step: "1", title: "Copy Profile", desc: "Select all text from your LinkedIn page" },
+                { step: "2", title: "Paste & Analyze", desc: "AI scores every section out of 10" },
+                { step: "3", title: "Get Results", desc: "Issues, suggestions & projected scores" },
               ].map(s => (
                 <div key={s.step} className="text-center p-3 rounded-xl bg-muted/50">
                   <div className="w-7 h-7 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center mx-auto mb-1.5">{s.step}</div>
