@@ -20,6 +20,7 @@ export function FloatingToolbar({ containerRef }: FloatingToolbarProps) {
   const [showSizeDropdown, setShowSizeDropdown] = useState(false);
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
+  const [savedRange, setSavedRange] = useState<Range | null>(null);
   const [currentFont, setCurrentFont] = useState("");
   const [currentSize, setCurrentSize] = useState("");
   const [hasSelection, setHasSelection] = useState(false);
