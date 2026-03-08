@@ -414,7 +414,7 @@ function renderSections(
     if (key === "summary" && data.summary) return (
       <HWrap key={key} changeType={ct("summary")}>
         <STitle title="Summary" style={config.sectionStyle} color={c} />
-        <p className="text-[10.5px] text-gray-700 leading-[1.6]">{data.summary}</p>
+        <EditableText value={data.summary} field="summary" as="p" className="text-[10.5px] text-gray-700 leading-[1.6]" />
       </HWrap>
     );
     if (key === "experience") return (
