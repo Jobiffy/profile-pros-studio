@@ -3,15 +3,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Linkedin, ArrowLeft, Sparkles, TrendingUp, AlertTriangle,
   CheckCircle2, ChevronDown, ChevronUp, Loader2, Target,
-  Award, Lightbulb, BarChart3,
+  Award, Lightbulb, BarChart3, Star, Zap, User,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -27,21 +25,23 @@ interface LinkedInReviewResult {
   overallScore: number;
   projectedOverallScore: number;
   summary: string;
+  profileName: string;
+  profileHeadline: string;
   sections: SectionReview[];
   topStrengths: string[];
   criticalImprovements: string[];
 }
 
-const scoreColor = (score: number) => {
-  if (score >= 8) return "text-emerald-500";
-  if (score >= 6) return "text-amber-500";
-  return "text-red-500";
-};
-
 const scoreBg = (score: number) => {
   if (score >= 8) return "bg-emerald-500";
   if (score >= 6) return "bg-amber-500";
   return "bg-red-500";
+};
+
+const scoreColor = (score: number) => {
+  if (score >= 8) return "text-emerald-500";
+  if (score >= 6) return "text-amber-500";
+  return "text-red-500";
 };
 
 const ScoreRing = ({ score, max = 100, size = 120, label }: { score: number; max?: number; size?: number; label: string }) => {
@@ -52,7 +52,7 @@ const ScoreRing = ({ score, max = 100, size = 120, label }: { score: number; max
   const color = pct >= 80 ? "stroke-emerald-500" : pct >= 60 ? "stroke-amber-500" : "stroke-red-500";
 
   return (
-    <div className="flex flex-col items-center gap-1">
+    <div className="flex flex-col items-center gap-1 relative">
       <svg width={size} height={size} className="-rotate-90">
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="hsl(var(--muted))" strokeWidth="8" />
         <motion.circle
@@ -64,7 +64,7 @@ const ScoreRing = ({ score, max = 100, size = 120, label }: { score: number; max
           transition={{ duration: 1.2, ease: "easeOut" }}
         />
       </svg>
-      <div className="absolute flex flex-col items-center justify-center" style={{ width: size, height: size }}>
+      <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ width: size, height: size }}>
         <span className="text-2xl font-bold text-foreground">{score}</span>
         <span className="text-[10px] text-muted-foreground">/{max}</span>
       </div>
@@ -73,38 +73,34 @@ const ScoreRing = ({ score, max = 100, size = 120, label }: { score: number; max
   );
 };
 
-const SectionCard = ({ section }: { section: SectionReview }) => {
+const SectionCard = ({ section, index }: { section: SectionReview; index: number }) => {
   const [expanded, setExpanded] = useState(false);
   const improvement = section.projectedScore - section.score;
 
   return (
     <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
       layout
       className="rounded-xl border border-border bg-card p-4 hover:shadow-md transition-shadow"
     >
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between gap-3"
-      >
+      <button onClick={() => setExpanded(!expanded)} className="w-full flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm ${scoreBg(section.score)}`}>
             {section.score}
           </div>
           <div className="text-left min-w-0">
             <h3 className="font-semibold text-foreground text-sm truncate">{section.name}</h3>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              {improvement > 0 && (
-                <span className="text-xs text-emerald-600 flex items-center gap-0.5">
-                  <TrendingUp className="w-3 h-3" />+{improvement} possible
-                </span>
-              )}
-            </div>
+            {improvement > 0 && (
+              <span className="text-xs text-emerald-600 flex items-center gap-0.5">
+                <TrendingUp className="w-3 h-3" />+{improvement} possible
+              </span>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-xs">
-            → {section.projectedScore}/10
-          </Badge>
+          <Badge variant="outline" className="text-xs">→ {section.projectedScore}/10</Badge>
           {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
         </div>
       </button>
@@ -126,9 +122,7 @@ const SectionCard = ({ section }: { section: SectionReview }) => {
                   </h4>
                   <ul className="space-y-1">
                     {section.issues.map((issue, i) => (
-                      <li key={i} className="text-xs text-muted-foreground pl-4 relative before:content-['•'] before:absolute before:left-1 before:text-red-400">
-                        {issue}
-                      </li>
+                      <li key={i} className="text-xs text-muted-foreground pl-4 relative before:content-['•'] before:absolute before:left-1 before:text-red-400">{issue}</li>
                     ))}
                   </ul>
                 </div>
@@ -140,9 +134,7 @@ const SectionCard = ({ section }: { section: SectionReview }) => {
                   </h4>
                   <ul className="space-y-1">
                     {section.suggestions.map((sug, i) => (
-                      <li key={i} className="text-xs text-muted-foreground pl-4 relative before:content-['✓'] before:absolute before:left-1 before:text-emerald-500">
-                        {sug}
-                      </li>
+                      <li key={i} className="text-xs text-muted-foreground pl-4 relative before:content-['✓'] before:absolute before:left-1 before:text-emerald-500">{sug}</li>
                     ))}
                   </ul>
                 </div>
@@ -158,29 +150,41 @@ const SectionCard = ({ section }: { section: SectionReview }) => {
 const LinkedInReviewer = () => {
   const navigate = useNavigate();
   const [linkedinUrl, setLinkedinUrl] = useState("");
-  const [profileText, setProfileText] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState("");
   const [result, setResult] = useState<LinkedInReviewResult | null>(null);
 
   const handleAnalyze = async () => {
-    if (!profileText.trim() || profileText.trim().length < 50) {
-      toast({ title: "Profile text too short", description: "Please paste your full LinkedIn profile content (at least 50 characters).", variant: "destructive" });
+    const url = linkedinUrl.trim();
+    if (!url) {
+      toast({ title: "URL Required", description: "Please enter your LinkedIn profile URL.", variant: "destructive" });
       return;
     }
+    if (!url.includes("linkedin.com/in/")) {
+      toast({ title: "Invalid URL", description: "Please enter a valid LinkedIn profile URL (e.g. linkedin.com/in/username).", variant: "destructive" });
+      return;
+    }
+
     setLoading(true);
     setResult(null);
+    setLoadingStep("Fetching your LinkedIn profile...");
+
     try {
+      setTimeout(() => setLoadingStep("Analyzing profile sections with AI..."), 4000);
+      setTimeout(() => setLoadingStep("Generating scores & recommendations..."), 8000);
+
       const { data, error } = await supabase.functions.invoke("linkedin-review", {
-        body: { profileText, linkedinUrl },
+        body: { linkedinUrl: url },
       });
       if (error) throw new Error(typeof error === "object" && error.message ? error.message : "Analysis failed");
       if (data?.error) throw new Error(data.error);
       setResult(data as LinkedInReviewResult);
-      toast({ title: "Analysis Complete!", description: "Your LinkedIn profile has been reviewed." });
+      toast({ title: "Analysis Complete! 🎉", description: "Your LinkedIn profile has been reviewed." });
     } catch (e: any) {
       toast({ title: "Analysis Failed", description: e.message, variant: "destructive" });
     } finally {
       setLoading(false);
+      setLoadingStep("");
     }
   };
 
@@ -194,113 +198,148 @@ const LinkedInReviewer = () => {
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-[#0A66C2] flex items-center justify-center">
-                <Linkedin className="w-4 h-4 text-white" />
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                <span className="text-primary-foreground font-bold text-xs">J</span>
               </div>
               <div>
-                <h1 className="text-sm font-bold text-foreground leading-tight">LinkedIn Profile Reviewer</h1>
-                <p className="text-[10px] text-muted-foreground">Powered by Jobiffy AI</p>
+                <h1 className="text-sm font-bold text-foreground leading-tight">
+                  Job<span className="text-primary">iffy</span> LinkedIn Profile Reviewer
+                </h1>
+                <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                  <Star className="w-2.5 h-2.5 text-amber-500" /> Core USP Feature
+                </p>
               </div>
             </div>
           </div>
+          <Badge className="bg-primary/10 text-primary border-primary/20 text-xs flex items-center gap-1">
+            <Zap className="w-3 h-3" /> AI-Powered
+          </Badge>
         </div>
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-8">
         {!result ? (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="max-w-2xl mx-auto space-y-6"
-          >
-            <div className="text-center space-y-2">
-              <div className="w-16 h-16 rounded-2xl bg-[#0A66C2]/10 flex items-center justify-center mx-auto">
-                <Linkedin className="w-8 h-8 text-[#0A66C2]" />
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-2xl mx-auto space-y-6">
+            {/* Hero */}
+            <div className="text-center space-y-3">
+              <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+                <Linkedin className="w-8 h-8 text-primary" />
               </div>
-              <h2 className="text-2xl font-bold text-foreground">Analyze Your LinkedIn Profile</h2>
+              <h2 className="text-2xl font-bold text-foreground">
+                Jobiffy LinkedIn Profile Reviewer
+              </h2>
               <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                Get AI-powered feedback on every section of your LinkedIn profile with actionable improvement suggestions.
+                Just paste your LinkedIn URL — our AI automatically fetches and analyzes every section of your profile with detailed scores and actionable improvements.
               </p>
+
+              {/* USP pills */}
+              <div className="flex flex-wrap justify-center gap-2 pt-2">
+                {[
+                  { icon: Target, label: "ATS Score Checker", path: "/" },
+                  { icon: Linkedin, label: "LinkedIn Reviewer", path: "/linkedin-reviewer", active: true },
+                  { icon: Sparkles, label: "AI Resume Coach", path: "/" },
+                ].map((usp) => (
+                  <button
+                    key={usp.label}
+                    onClick={() => navigate(usp.path)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                      usp.active
+                        ? "bg-primary text-primary-foreground shadow-md"
+                        : "bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                    }`}
+                  >
+                    <usp.icon className="w-3.5 h-3.5" />
+                    {usp.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
+            {/* URL Input */}
             <Card className="p-6 space-y-4">
               <div>
-                <label className="text-sm font-medium text-foreground mb-1.5 block">LinkedIn URL (optional)</label>
-                <Input
-                  placeholder="https://linkedin.com/in/your-profile"
-                  value={linkedinUrl}
-                  onChange={e => setLinkedinUrl(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-foreground mb-1.5 block">
-                  Profile Content <span className="text-red-500">*</span>
-                </label>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Copy all text from your LinkedIn profile page and paste it below. Include headline, about, experience, education, skills, and projects.
-                </p>
-                <Textarea
-                  placeholder={`Paste your full LinkedIn profile content here...\n\nExample:\nJohn Doe\nSenior Software Engineer at Google\n\nAbout:\nPassionate engineer with 8+ years...\n\nExperience:\nSenior Software Engineer - Google\nJan 2020 - Present\n• Led team of 5 engineers...`}
-                  className="min-h-[250px] text-sm font-mono"
-                  value={profileText}
-                  onChange={e => setProfileText(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  {profileText.length} characters
+                <label className="text-sm font-medium text-foreground mb-1.5 block">LinkedIn Profile URL</label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Linkedin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="https://linkedin.com/in/your-profile"
+                      value={linkedinUrl}
+                      onChange={e => setLinkedinUrl(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && handleAnalyze()}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  We'll automatically fetch and analyze your entire LinkedIn profile.
                 </p>
               </div>
+
               <Button
                 onClick={handleAnalyze}
-                disabled={loading || profileText.trim().length < 50}
-                className="w-full bg-[#0A66C2] hover:bg-[#084d94] text-white"
+                disabled={loading || !linkedinUrl.trim()}
+                className="w-full"
                 size="lg"
               >
                 {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Analyzing Profile...
-                  </>
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{loadingStep || "Analyzing..."}</>
                 ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Analyze My Profile
-                  </>
+                  <><Sparkles className="w-4 h-4 mr-2" />Analyze My LinkedIn Profile</>
                 )}
               </Button>
             </Card>
 
             {loading && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center space-y-3"
-              >
-                <Progress value={undefined} className="h-1.5" />
-                <p className="text-xs text-muted-foreground animate-pulse">
-                  AI is reviewing your profile sections...
-                </p>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center space-y-3">
+                <div className="flex items-center justify-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "300ms" }} />
+                </div>
+                <p className="text-xs text-muted-foreground animate-pulse">{loadingStep}</p>
               </motion.div>
             )}
+
+            {/* How it works */}
+            <div className="grid grid-cols-3 gap-3 pt-4">
+              {[
+                { step: "1", title: "Paste URL", desc: "Enter your LinkedIn profile link" },
+                { step: "2", title: "AI Analyzes", desc: "We fetch & score every section" },
+                { step: "3", title: "Get Results", desc: "Detailed feedback & improvements" },
+              ].map(s => (
+                <div key={s.step} className="text-center p-3 rounded-xl bg-muted/50">
+                  <div className="w-7 h-7 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center mx-auto mb-1.5">{s.step}</div>
+                  <p className="text-xs font-semibold text-foreground">{s.title}</p>
+                  <p className="text-[10px] text-muted-foreground">{s.desc}</p>
+                </div>
+              ))}
+            </div>
           </motion.div>
         ) : (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="space-y-6"
-          >
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+            {/* Profile header */}
+            {(result.profileName || result.profileHeadline) && (
+              <Card className="p-5 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <User className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-foreground">{result.profileName || "LinkedIn Profile"}</h2>
+                  {result.profileHeadline && <p className="text-xs text-muted-foreground">{result.profileHeadline}</p>}
+                </div>
+              </Card>
+            )}
+
             {/* Score Overview */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="p-6 flex items-center justify-center col-span-1">
-                <div className="relative">
-                  <ScoreRing score={result.overallScore} label="Current Score" />
-                </div>
+              <Card className="p-6 flex items-center justify-center">
+                <ScoreRing score={result.overallScore} label="Current Score" />
               </Card>
-              <Card className="p-6 flex items-center justify-center col-span-1">
-                <div className="relative">
-                  <ScoreRing score={result.projectedOverallScore} label="Projected Score" />
-                </div>
+              <Card className="p-6 flex items-center justify-center">
+                <ScoreRing score={result.projectedOverallScore} label="Projected Score" />
               </Card>
-              <Card className="p-6 col-span-1 flex flex-col justify-center">
+              <Card className="p-6 flex flex-col justify-center">
                 <div className="flex items-center gap-2 mb-2">
                   <TrendingUp className="w-5 h-5 text-emerald-500" />
                   <span className="text-lg font-bold text-emerald-500">
@@ -320,8 +359,7 @@ const LinkedInReviewer = () => {
                 <ul className="space-y-1.5">
                   {result.topStrengths.map((s, i) => (
                     <li key={i} className="text-xs text-muted-foreground flex items-start gap-2">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                      {s}
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 mt-0.5 flex-shrink-0" />{s}
                     </li>
                   ))}
                 </ul>
@@ -333,8 +371,7 @@ const LinkedInReviewer = () => {
                 <ul className="space-y-1.5">
                   {result.criticalImprovements.map((s, i) => (
                     <li key={i} className="text-xs text-muted-foreground flex items-start gap-2">
-                      <AlertTriangle className="w-3.5 h-3.5 text-red-500 mt-0.5 flex-shrink-0" />
-                      {s}
+                      <AlertTriangle className="w-3.5 h-3.5 text-red-500 mt-0.5 flex-shrink-0" />{s}
                     </li>
                   ))}
                 </ul>
@@ -379,20 +416,18 @@ const LinkedInReviewer = () => {
               <h3 className="text-sm font-semibold text-foreground mb-3">Detailed Section Reviews</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {result.sections.map((sec, i) => (
-                  <SectionCard key={i} section={sec} />
+                  <SectionCard key={i} section={sec} index={i} />
                 ))}
               </div>
             </div>
 
-            {/* Analyze Again */}
-            <div className="flex justify-center pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setResult(null)}
-                className="gap-2"
-              >
-                <Sparkles className="w-4 h-4" />
-                Analyze Another Profile
+            {/* Actions */}
+            <div className="flex justify-center gap-3 pt-4">
+              <Button variant="outline" onClick={() => setResult(null)} className="gap-2">
+                <Sparkles className="w-4 h-4" /> Analyze Another Profile
+              </Button>
+              <Button onClick={() => navigate("/")} className="gap-2">
+                <ArrowLeft className="w-4 h-4" /> Back to Resume Builder
               </Button>
             </div>
           </motion.div>

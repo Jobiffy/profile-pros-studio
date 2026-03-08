@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Target, Briefcase, MessageSquare, FileText, Sparkles, Download, X, ArrowRight, Star, Zap } from "lucide-react";
+import { Target, Briefcase, MessageSquare, FileText, Sparkles, Download, X, ArrowRight, Star, Zap, Linkedin } from "lucide-react";
 
 const steps = [
   {
@@ -43,6 +43,15 @@ const steps = [
     isUSP: true,
     uspLabel: "CORE USP",
     uspColor: "from-violet-500 to-purple-600",
+  },
+  {
+    icon: Linkedin,
+    title: "⭐ LinkedIn Profile Reviewer",
+    description: "Paste your LinkedIn URL and get an instant AI-powered review. Every section is scored out of 10 with specific issues and improvement suggestions. See your projected score after applying changes.",
+    highlight: "linkedin-panel",
+    isUSP: true,
+    uspLabel: "CORE USP",
+    uspColor: "from-blue-600 to-cyan-500",
   },
   {
     icon: Download,
