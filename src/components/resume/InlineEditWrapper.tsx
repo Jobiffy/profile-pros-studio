@@ -216,7 +216,6 @@ export function InlineEditWrapper({ children, data, onEdit }: Props) {
   return (
     <div ref={wrapperRef} className="inline-edit-wrapper relative">
       {children}
-      <FloatingToolbar containerRef={wrapperRef as React.RefObject<HTMLElement>} />
     </div>
   );
 }

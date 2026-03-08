@@ -483,8 +483,13 @@ const ResumeBuilder = () => {
           </div>
         </motion.div>
 
+        {/* Formatting Toolbar */}
+        <div className="shrink-0 flex items-center justify-center px-4 py-1.5 border-b border-border bg-card/60">
+          <FloatingToolbar containerRef={previewContainerRef} />
+        </div>
+
         {/* Preview Area */}
-        <div className="flex-1 overflow-auto flex justify-center items-start py-8 px-4 bg-muted/30 relative">
+        <div ref={previewContainerRef} className="flex-1 overflow-auto flex justify-center items-start py-8 px-4 bg-muted/30 relative">
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 30 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
