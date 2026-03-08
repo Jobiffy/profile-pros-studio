@@ -25,7 +25,7 @@ import {
   FileText, Sparkles, MessageSquare, Target, Briefcase,
   Download, Upload, Palette, Zap, Eye, EyeOff,
   PanelLeftClose, PanelLeftOpen, LayoutList, Sun, Moon, FileDown,
-  Plus, X, FileEdit,
+  Plus, X, FileEdit, Linkedin,
 } from "lucide-react";
 
 type RightPanel = "none" | "ats" | "jd" | "chat";
