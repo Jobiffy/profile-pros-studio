@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Target, Briefcase, MessageSquare, FileText, Sparkles, Download, X, ArrowRight, Star, Zap } from "lucide-react";
+import { Target, Briefcase, MessageSquare, FileText, Sparkles, Download, X, ArrowRight, Star, Zap, Linkedin } from "lucide-react";
 
 const steps = [
   {
