@@ -80,6 +80,28 @@ const resumeToolSchema = {
             },
             required: ["role", "org", "date", "bullets"]
           }
+        },
+        customSections: {
+          type: "array",
+          description: "Any content that does not fit into the standard sections above. Use this for awards, publications, volunteer work, languages, hobbies, references, or any unrecognized sections. Label each with the original section title.",
+          items: {
+            type: "object",
+            properties: {
+              title: { type: "string", description: "Original section heading from the resume" },
+              items: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    subtitle: { type: "string" },
+                    description: { type: "string" },
+                    bullets: { type: "array", items: { type: "string" } }
+                  }
+                }
+              }
+            },
+            required: ["title", "items"]
+          }
         }
       },
       required: ["header", "summary", "experience", "education", "skills"]
