@@ -36,7 +36,7 @@ async function extractTextFromDocx(file: File): Promise<string> {
 interface Props {
   open: boolean;
   onClose: () => void;
-  onImport: (data: ResumeData) => void;
+  onImport: (data: ResumeData, fileName?: string) => void;
 }
 
 export function ResumeImport({ open, onClose, onImport }: Props) {
