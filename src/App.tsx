@@ -17,6 +17,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<ResumeBuilder />} />
+          <Route path="/linkedin-reviewer" element={<LinkedInReviewer />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
