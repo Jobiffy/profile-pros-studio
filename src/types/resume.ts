@@ -57,7 +57,7 @@ export interface ResumeData {
 export interface TemplateInfo {
   id: string;
   name: string;
-  category: 'marketing' | 'sales' | 'consulting' | 'pm' | 'tech' | 'hr' | 'freshers' | 'generic';
+  category: 'marketing' | 'sales' | 'consulting' | 'pm' | 'tech' | 'hr' | 'freshers' | 'generic' | 'finance' | 'operations' | 'project_management';
   description: string;
   preview: string;
 }
