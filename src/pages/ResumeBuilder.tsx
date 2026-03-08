@@ -57,7 +57,7 @@ const ResumeBuilder = () => {
     resumeData, setResumeData, updateHeader, updateSummary, updateExperience, updateEducation, updateField,
     colorPalette, setColorPalette, customColor, applyCustomColor,
     changedFields, showChanges, setShowChanges, clearChanges, markChanged,
-    undo, redo, canUndo, canRedo,
+    undo, redo, canUndo, canRedo, resetHistory,
   } = resumeState;
 
   // Sync resume data from store when switching resumes
