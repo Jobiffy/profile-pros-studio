@@ -4,6 +4,32 @@ import { Upload, FileText, Loader2, CheckCircle2, X, AlertCircle } from "lucide-
 import { supabase } from "@/integrations/supabase/client";
 import { ResumeData } from "@/types/resume";
 import { toast } from "@/hooks/use-toast";
+import * as pdfjsLib from "pdfjs-dist";
+import mammoth from "mammoth";
+
+// Configure PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+
+async function extractTextFromPdf(file: File): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  let fullText = "";
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const textContent = await page.getTextContent();
+    const pageText = textContent.items
+      .map((item: any) => item.str)
+      .join(" ");
+    fullText += pageText + "\n";
+  }
+  return fullText;
+}
+
+async function extractTextFromDocx(file: File): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer();
+  const result = await mammoth.extractRawText({ arrayBuffer });
+  return result.value;
+}
 
 interface Props {
   open: boolean;
@@ -24,23 +50,27 @@ export function ResumeImport({ open, onClose, onImport }: Props) {
     setProgress(10);
 
     try {
-      // Read file as text
       let text = "";
-      if (file.type === "text/plain" || file.name.endsWith(".txt") || file.name.endsWith(".md")) {
-        text = await file.text();
-      } else if (file.type === "application/pdf" || file.name.endsWith(".pdf")) {
-        // For PDF, we'll send the raw text extraction request
-        // We read what we can from the file
-        text = await file.text();
-        // If it looks like binary PDF, let user know we'll try our best
-        if (text.startsWith("%PDF")) {
-          // Extract readable text from PDF (basic extraction)
-          const readable = text.replace(/[^\x20-\x7E\n\r\t]/g, " ").replace(/\s{3,}/g, "\n").trim();
-          text = readable;
+      const name = file.name.toLowerCase();
+
+      if (name.endsWith(".pdf") || file.type === "application/pdf") {
+        text = await extractTextFromPdf(file);
+      } else if (name.endsWith(".docx") || file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+        text = await extractTextFromDocx(file);
+      } else if (name.endsWith(".doc") || file.type === "application/msword") {
+        // .doc (legacy binary format) – try mammoth; it handles some .doc files
+        try {
+          text = await extractTextFromDocx(file);
+        } catch {
+          throw new Error("Legacy .doc format is not fully supported. Please save as .docx or .pdf and try again.");
         }
       } else {
-        // Try reading as text
+        // Plain text / markdown
         text = await file.text();
+      }
+
+      if (!text || text.trim().length < 30) {
+        throw new Error("Could not extract enough text from the file. Please try a different format (.docx or .pdf).");
       }
 
       setProgress(30);
@@ -53,20 +83,20 @@ export function ResumeImport({ open, onClose, onImport }: Props) {
       setProgress(90);
 
       if (error) throw error;
-      if (!data) throw new Error("No data returned");
+      if (!data) throw new Error("No data returned from AI");
 
       setProgress(100);
-      
+
       // Small delay for animation
       await new Promise(r => setTimeout(r, 500));
-      
+
       onImport(data);
       toast({ title: "Resume imported!", description: `Successfully parsed "${file.name}"` });
       onClose();
     } catch (e: any) {
       toast({
         title: "Import failed",
-        description: e.message || "Could not parse the resume. Try a .txt or simpler format.",
+        description: e.message || "Could not parse the resume. Try a .docx or .pdf format.",
         variant: "destructive",
       });
     } finally {
@@ -144,7 +174,7 @@ export function ResumeImport({ open, onClose, onImport }: Props) {
                 Drop your resume here or click to browse
               </p>
               <p className="text-xs text-muted-foreground">
-                Supports PDF, TXT, DOC, DOCX • Max 5MB
+                Supports PDF, DOCX, TXT, MD • Max 5MB
               </p>
             </div>
           ) : (
