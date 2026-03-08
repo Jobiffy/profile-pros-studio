@@ -9,6 +9,7 @@ export interface SectionOrderItem {
 export interface HighlightProps {
   changedFields?: Map<string, string>;
   showChanges?: boolean;
+  onInlineEdit?: (field: string, value: any) => void;
 }
 
 const HIGHLIGHT_COLORS: Record<string, { border: string; bg: string; badge: string; badgeText: string; label: string }> = {
