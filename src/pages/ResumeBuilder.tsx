@@ -237,7 +237,7 @@ const ResumeBuilder = () => {
   };
 
   const handleNewResume = useCallback(() => {
-    resumeStore.addResume(`Resume ${resumeStore.resumes.length + 1}`);
+    resumeStore.addResume(`Resume ${resumeStore.resumes.length + 1}`, { ...dummyResume });
   }, [resumeStore]);
 
   return (

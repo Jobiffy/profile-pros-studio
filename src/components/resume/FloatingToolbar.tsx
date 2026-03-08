@@ -207,17 +207,27 @@ export function FloatingToolbar({ containerRef, onUndo, onRedo, canUndo, canRedo
     >
       {/* Undo / Redo */}
       <button
-        onClick={onUndo}
-        disabled={!canUndo}
-        className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors text-popover-foreground hover:bg-accent/50 ${!canUndo ? 'opacity-30 pointer-events-none' : ''}`}
+        onClick={() => {
+          if (isEditingInline(containerRef)) {
+            document.execCommand("undo");
+          } else {
+            onUndo?.();
+          }
+        }}
+        className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors text-popover-foreground hover:bg-accent/50 ${!canUndo ? 'opacity-30' : ''}`}
         title="Undo (Ctrl+Z)"
       >
         <Undo2 size={14} />
       </button>
       <button
-        onClick={onRedo}
-        disabled={!canRedo}
-        className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors text-popover-foreground hover:bg-accent/50 ${!canRedo ? 'opacity-30 pointer-events-none' : ''}`}
+        onClick={() => {
+          if (isEditingInline(containerRef)) {
+            document.execCommand("redo");
+          } else {
+            onRedo?.();
+          }
+        }}
+        className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors text-popover-foreground hover:bg-accent/50 ${!canRedo ? 'opacity-30' : ''}`}
         title="Redo (Ctrl+Y)"
       >
         <Redo2 size={14} />
