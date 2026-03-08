@@ -117,13 +117,14 @@ export function FloatingToolbar({ containerRef }: FloatingToolbarProps) {
       sel.addRange(savedRange);
     }
     document.execCommand("createLink", false, url);
-    // Style the link
+    // Style the link blue + underlined
     if (sel && sel.anchorNode) {
       const anchor = sel.anchorNode.parentElement?.closest("a") || sel.anchorNode.parentElement;
       if (anchor && anchor.tagName === "A") {
-        (anchor as HTMLElement).style.color = "hsl(var(--primary))";
+        (anchor as HTMLElement).style.color = "hsl(217, 91%, 50%)";
         (anchor as HTMLElement).style.textDecoration = "underline";
         (anchor as HTMLElement).setAttribute("target", "_blank");
+        (anchor as HTMLElement).setAttribute("rel", "noopener noreferrer");
       }
     }
     setLinkUrl("");
