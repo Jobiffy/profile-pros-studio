@@ -489,7 +489,7 @@ const ResumeBuilder = () => {
 
         {/* Formatting Toolbar */}
         <div className="shrink-0 flex items-center justify-center px-4 py-1.5 border-b border-border bg-card/60">
-          <FloatingToolbar containerRef={previewContainerRef} />
+          <FloatingToolbar containerRef={previewContainerRef} onUndo={undo} onRedo={redo} canUndo={canUndo} canRedo={canRedo} />
         </div>
         <LinkContextMenu containerRef={previewContainerRef} />
 
