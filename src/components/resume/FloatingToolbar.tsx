@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { Bold, Italic, Underline, ChevronDown, Type, Link2 } from "lucide-react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { Bold, Italic, Underline, ChevronDown, Type, Link2, Undo2, Redo2 } from "lucide-react";
 
 const FONT_FAMILIES = [
   "Inter", "Georgia", "Times New Roman", "Arial", "Helvetica",
@@ -12,18 +12,23 @@ const FONT_SIZES = [
 
 interface FloatingToolbarProps {
   containerRef?: React.RefObject<HTMLElement>;
+  onUndo?: () => void;
+  onRedo?: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
 }
 
-export function FloatingToolbar({ containerRef }: FloatingToolbarProps) {
+export function FloatingToolbar({ containerRef, onUndo, onRedo, canUndo, canRedo }: FloatingToolbarProps) {
   const [activeFormats, setActiveFormats] = useState({ bold: false, italic: false, underline: false });
   const [showFontDropdown, setShowFontDropdown] = useState(false);
   const [showSizeDropdown, setShowSizeDropdown] = useState(false);
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
-  const [savedRange, setSavedRange] = useState<Range | null>(null);
+  const savedRangeRef = useRef<Range | null>(null);
   const [currentFont, setCurrentFont] = useState("");
   const [currentSize, setCurrentSize] = useState("");
   const [hasSelection, setHasSelection] = useState(false);
+  const linkInputRef = useRef<HTMLInputElement>(null);
 
   const updateToolbarState = useCallback(() => {
     setActiveFormats({
@@ -40,6 +45,8 @@ export function FloatingToolbar({ containerRef }: FloatingToolbarProps) {
     const handleSelectionChange = () => {
       const sel = window.getSelection();
       if (!sel || sel.isCollapsed || !sel.rangeCount) {
+        // Don't clear hasSelection if focus is in link input
+        if (showLinkInput) return;
         setHasSelection(false);
         return;
       }
@@ -49,19 +56,33 @@ export function FloatingToolbar({ containerRef }: FloatingToolbarProps) {
         setHasSelection(true);
         updateToolbarState();
       } else {
-        setHasSelection(false);
+        if (!showLinkInput) setHasSelection(false);
       }
     };
 
     document.addEventListener("selectionchange", handleSelectionChange);
     return () => document.removeEventListener("selectionchange", handleSelectionChange);
-  }, [containerRef, updateToolbarState]);
+  }, [containerRef, updateToolbarState, showLinkInput]);
 
   const handleToolbarMouseDown = (e: React.MouseEvent) => {
+    // Don't prevent default on the link input itself
+    const target = e.target as HTMLElement;
+    if (target.tagName === "INPUT") return;
     e.preventDefault();
   };
 
+  const restoreSelection = useCallback(() => {
+    const range = savedRangeRef.current;
+    if (!range) return false;
+    const sel = window.getSelection();
+    if (!sel) return false;
+    sel.removeAllRanges();
+    sel.addRange(range);
+    return true;
+  }, []);
+
   const applyCommand = (command: string, value?: string) => {
+    restoreSelection();
     document.execCommand(command, false, value);
     updateToolbarState();
   };
@@ -73,6 +94,7 @@ export function FloatingToolbar({ containerRef }: FloatingToolbarProps) {
   };
 
   const handleSizeSelect = (size: string) => {
+    if (!restoreSelection()) return;
     const sel = window.getSelection();
     if (sel && !sel.isCollapsed && sel.rangeCount) {
       const range = sel.getRangeAt(0);
@@ -98,38 +120,70 @@ export function FloatingToolbar({ containerRef }: FloatingToolbarProps) {
     setShowSizeDropdown(false);
   };
 
+  // Save selection whenever it changes in the container
+  useEffect(() => {
+    const saveCurrentRange = () => {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+        const range = sel.getRangeAt(0);
+        const container = containerRef?.current;
+        if (container && container.contains(range.commonAncestorContainer)) {
+          savedRangeRef.current = range.cloneRange();
+        }
+      }
+    };
+
+    document.addEventListener("selectionchange", saveCurrentRange);
+    return () => document.removeEventListener("selectionchange", saveCurrentRange);
+  }, [containerRef]);
+
   const handleOpenLinkInput = () => {
-    const sel = window.getSelection();
-    if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
-      setSavedRange(sel.getRangeAt(0).cloneRange());
-    }
+    // savedRangeRef is already kept up to date
     setShowLinkInput(!showLinkInput);
     setShowFontDropdown(false);
     setShowSizeDropdown(false);
   };
 
   const handleInsertLink = () => {
-    if (!linkUrl.trim() || !savedRange) return;
+    if (!linkUrl.trim() || !savedRangeRef.current) return;
     const url = linkUrl.startsWith("http") ? linkUrl : `https://${linkUrl}`;
+
+    // Restore saved selection
     const sel = window.getSelection();
     if (sel) {
       sel.removeAllRanges();
-      sel.addRange(savedRange);
+      sel.addRange(savedRangeRef.current);
     }
-    document.execCommand("createLink", false, url);
-    // Style the link blue + underlined
-    if (sel && sel.anchorNode) {
-      const anchor = sel.anchorNode.parentElement?.closest("a") || sel.anchorNode.parentElement;
-      if (anchor && anchor.tagName === "A") {
-        (anchor as HTMLElement).style.color = "hsl(217, 91%, 50%)";
-        (anchor as HTMLElement).style.textDecoration = "underline";
-        (anchor as HTMLElement).setAttribute("target", "_blank");
-        (anchor as HTMLElement).setAttribute("rel", "noopener noreferrer");
+
+    // Focus the contentEditable ancestor so execCommand works
+    const editableEl = savedRangeRef.current.startContainer.parentElement?.closest("[contenteditable='true']") as HTMLElement;
+    if (editableEl) {
+      editableEl.focus();
+      // Re-apply selection after focus
+      if (sel) {
+        sel.removeAllRanges();
+        sel.addRange(savedRangeRef.current);
       }
     }
+
+    document.execCommand("createLink", false, url);
+
+    // Style the newly created link
+    if (sel && sel.rangeCount > 0) {
+      const range = sel.getRangeAt(0);
+      const container = range.commonAncestorContainer;
+      const parentEl = container.nodeType === Node.TEXT_NODE ? container.parentElement : container as HTMLElement;
+      const anchor = parentEl?.closest("a") || parentEl?.querySelector("a");
+      if (anchor) {
+        anchor.style.color = "hsl(217, 91%, 50%)";
+        anchor.style.textDecoration = "underline";
+        anchor.setAttribute("target", "_blank");
+        anchor.setAttribute("rel", "noopener noreferrer");
+      }
+    }
+
     setLinkUrl("");
     setShowLinkInput(false);
-    setSavedRange(null);
   };
 
   const truncateFont = (f: string) => f.length > 10 ? f.slice(0, 10) + "…" : f;
@@ -141,6 +195,26 @@ export function FloatingToolbar({ containerRef }: FloatingToolbarProps) {
       onMouseDown={handleToolbarMouseDown}
       className="flex items-center gap-0.5 px-2 py-1.5 rounded-xl bg-popover border border-border shadow-sm"
     >
+      {/* Undo / Redo */}
+      <button
+        onClick={onUndo}
+        disabled={!canUndo}
+        className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors text-popover-foreground hover:bg-accent/50 ${!canUndo ? 'opacity-30 pointer-events-none' : ''}`}
+        title="Undo (Ctrl+Z)"
+      >
+        <Undo2 size={14} />
+      </button>
+      <button
+        onClick={onRedo}
+        disabled={!canRedo}
+        className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors text-popover-foreground hover:bg-accent/50 ${!canRedo ? 'opacity-30 pointer-events-none' : ''}`}
+        title="Redo (Ctrl+Y)"
+      >
+        <Redo2 size={14} />
+      </button>
+
+      <div className="w-px h-5 bg-border mx-0.5" />
+
       {/* Font Family Dropdown */}
       <div className="relative">
         <button
@@ -246,6 +320,7 @@ export function FloatingToolbar({ containerRef }: FloatingToolbarProps) {
         {showLinkInput && (
           <div className="absolute top-full right-0 mt-1 flex items-center gap-1 p-1.5 rounded-xl bg-popover border border-border shadow-xl z-50">
             <input
+              ref={linkInputRef}
               type="text"
               value={linkUrl}
               onChange={e => setLinkUrl(e.target.value)}
@@ -253,10 +328,12 @@ export function FloatingToolbar({ containerRef }: FloatingToolbarProps) {
               placeholder="https://example.com"
               className="w-52 px-2 py-1 text-[11px] rounded-lg bg-muted/50 border border-border text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary/30"
               autoFocus
-              onMouseDown={e => e.stopPropagation()}
             />
             <button
-              onClick={handleInsertLink}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                handleInsertLink();
+              }}
               className="px-2 py-1 text-[10px] font-semibold rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
             >
               Apply
