@@ -44,7 +44,7 @@ const scoreBg = (score: number) => {
   return "bg-red-500";
 };
 
-const ScoreRing = ({ score, max = 100, size = 120, label }: { score: number; max?: number; label: string }) => {
+const ScoreRing = ({ score, max = 100, size = 120, label }: { score: number; max?: number; size?: number; label: string }) => {
   const pct = (score / max) * 100;
   const r = (size - 12) / 2;
   const circ = 2 * Math.PI * r;
