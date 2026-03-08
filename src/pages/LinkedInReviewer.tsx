@@ -151,31 +151,27 @@ const SectionCard = ({ section, index }: { section: SectionReview; index: number
 const LinkedInReviewer = () => {
   const navigate = useNavigate();
   const [linkedinUrl, setLinkedinUrl] = useState("");
+  const [profileText, setProfileText] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState("");
   const [result, setResult] = useState<LinkedInReviewResult | null>(null);
 
   const handleAnalyze = async () => {
-    const url = linkedinUrl.trim();
-    if (!url) {
-      toast({ title: "URL Required", description: "Please enter your LinkedIn profile URL.", variant: "destructive" });
-      return;
-    }
-    if (!url.includes("linkedin.com/in/")) {
-      toast({ title: "Invalid URL", description: "Please enter a valid LinkedIn profile URL (e.g. linkedin.com/in/username).", variant: "destructive" });
+    if (!profileText.trim() || profileText.trim().length < 50) {
+      toast({ title: "More content needed", description: "Please paste your full LinkedIn profile content (at least 50 characters).", variant: "destructive" });
       return;
     }
 
     setLoading(true);
     setResult(null);
-    setLoadingStep("Fetching your LinkedIn profile...");
+    setLoadingStep("Analyzing profile sections with AI...");
 
     try {
-      setTimeout(() => setLoadingStep("Analyzing profile sections with AI..."), 4000);
-      setTimeout(() => setLoadingStep("Generating scores & recommendations..."), 8000);
+      setTimeout(() => setLoadingStep("Scoring each section..."), 3000);
+      setTimeout(() => setLoadingStep("Generating recommendations..."), 6000);
 
       const { data, error } = await supabase.functions.invoke("linkedin-review", {
-        body: { linkedinUrl: url },
+        body: { linkedinUrl: linkedinUrl.trim() || undefined, profileText },
       });
       if (error) throw new Error(typeof error === "object" && error.message ? error.message : "Analysis failed");
       if (data?.error) throw new Error(data.error);
