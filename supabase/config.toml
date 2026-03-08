@@ -2,3 +2,6 @@ project_id = "vqyzrkccrnmdhbbeceqx"
 
 [functions.resume-ai]
 verify_jwt = false
+
+[functions.linkedin-review]
+verify_jwt = false

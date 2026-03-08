@@ -25,7 +25,7 @@ import {
   FileText, Sparkles, MessageSquare, Target, Briefcase,
   Download, Upload, Palette, Zap, Eye, EyeOff,
   PanelLeftClose, PanelLeftOpen, LayoutList, Sun, Moon, FileDown,
-  Plus, X, FileEdit,
+  Plus, X, FileEdit, Linkedin,
 } from "lucide-react";
 
 type RightPanel = "none" | "ats" | "jd" | "chat";
@@ -478,6 +478,12 @@ const ResumeBuilder = () => {
             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setShowImport(true)}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all">
               <Upload size={14} /> Import
+            </motion.button>
+
+            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+              onClick={() => window.open("/linkedin-reviewer", "_blank")}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-[#0A66C2] hover:bg-[#0A66C2]/10 transition-all">
+              <Linkedin size={14} /> <span className="hidden sm:inline">LinkedIn</span>
             </motion.button>
 
             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setShowColorPalette(true)}
