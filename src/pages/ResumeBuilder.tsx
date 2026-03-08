@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion";
 import { templateList, templateComponents } from "@/templates";
 import { TemplateInfo } from "@/types/resume";
+import { dummyResume } from "@/data/dummyResume";
 import { useResumeData } from "@/hooks/useResumeData";
 import { useResumeAI } from "@/hooks/useResumeAI";
 import { useResumeStore } from "@/hooks/useResumeStore";
@@ -150,6 +151,27 @@ const ResumeBuilder = () => {
     }
   }, []);
 
+  // Keyboard shortcuts: Ctrl+Z / Ctrl+Y for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
+        // If editing inline (contentEditable), let browser handle it
+        const active = document.activeElement as HTMLElement;
+        if (active?.contentEditable === "true") return;
+        e.preventDefault();
+        undo();
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.key === "z" && e.shiftKey))) {
+        const active = document.activeElement as HTMLElement;
+        if (active?.contentEditable === "true") return;
+        e.preventDefault();
+        redo();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [undo, redo]);
+
   const handleOnboardingComplete = () => {
     setShowOnboarding(false);
     localStorage.setItem("jobiffy-onboarded", "true");
@@ -212,11 +234,17 @@ const ResumeBuilder = () => {
     });
   }, [sendChatMessage, updateField, markChanged, setResumeData, setShowChanges]);
 
-  const handleImport = (data: any) => {
+  const handleImport = (data: any, fileName?: string) => {
+    // Replace current resume content with parsed data
     setResumeData(data);
-    // When importing a new resume, create a new resume tab
-    const name = data.header?.name ? `${data.header.name}'s Resume` : "Imported Resume";
-    resumeStore.addResume(name, data);
+    resetHistory(data);
+    // Name resume after uploaded file
+    const baseName = fileName
+      ? fileName.replace(/\.[^.]+$/, "")
+      : data.header?.name
+        ? `${data.header.name}'s Resume`
+        : "Imported Resume";
+    resumeStore.renameResume(resumeStore.activeId, baseName);
   };
 
   const handleTailorResume = async (jd: string) => {
@@ -230,7 +258,7 @@ const ResumeBuilder = () => {
   };
 
   const handleNewResume = useCallback(() => {
-    resumeStore.addResume(`Resume ${resumeStore.resumes.length + 1}`);
+    resumeStore.addResume(`Resume ${resumeStore.resumes.length + 1}`, { ...dummyResume });
   }, [resumeStore]);
 
   return (
@@ -493,7 +521,7 @@ const ResumeBuilder = () => {
           </div>
         </motion.div>
 
-        {/* Formatting Toolbar */}
+        {/* Formatting Toolbar + Keyboard shortcuts */}
         <div className="shrink-0 flex items-center justify-center px-4 py-1.5 border-b border-border bg-card/60">
           <FloatingToolbar containerRef={previewContainerRef} onUndo={undo} onRedo={redo} canUndo={canUndo} canRedo={canRedo} />
         </div>
