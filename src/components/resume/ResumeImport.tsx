@@ -94,7 +94,7 @@ export function ResumeImport({ open, onClose, onImport }: Props) {
       setProgress(100);
       await new Promise((r) => setTimeout(r, 500));
 
-      onImport(data);
+      onImport(data, file.name);
       toast({
         title: "Resume imported!",
         description: `Successfully parsed "${file.name}"`,
