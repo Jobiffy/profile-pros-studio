@@ -1,5 +1,49 @@
-import React from "react";
+import React, { createContext, useContext } from "react";
 import { ResumeData } from "@/types/resume";
+
+// Inline edit context - templates can use this to make text editable
+const InlineEditContext = createContext<((field: string, value: any) => void) | null>(null);
+
+function EditableText({ value, field, as: Tag = "span", className, style }: {
+  value: string; field: string; as?: "span" | "p" | "h1" | "h2" | "div"; className?: string; style?: React.CSSProperties;
+}) {
+  const onEdit = useContext(InlineEditContext);
+  if (!onEdit) return <Tag className={className} style={style}>{value}</Tag>;
+  
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const el = e.currentTarget as HTMLElement;
+    el.contentEditable = "true";
+    el.focus();
+    el.classList.add("outline-none", "ring-2", "ring-blue-400/40", "rounded-sm");
+    
+    const handleBlur = () => {
+      el.contentEditable = "false";
+      el.classList.remove("outline-none", "ring-2", "ring-blue-400/40", "rounded-sm");
+      const newValue = el.textContent || "";
+      if (newValue !== value) onEdit(field, newValue);
+      el.removeEventListener("blur", handleBlur);
+      el.removeEventListener("keydown", handleKey);
+    };
+    const handleKey = (ke: KeyboardEvent) => {
+      if (ke.key === "Enter") { ke.preventDefault(); el.blur(); }
+      if (ke.key === "Escape") { el.textContent = value; el.blur(); }
+    };
+    el.addEventListener("blur", handleBlur);
+    el.addEventListener("keydown", handleKey);
+  };
+  
+  return (
+    <Tag
+      className={`${className || ""} cursor-pointer hover:ring-1 hover:ring-primary/20 hover:rounded-sm transition-all`}
+      style={style}
+      onDoubleClick={handleDoubleClick}
+      title="Double-click to edit"
+    >
+      {value || <span className="text-gray-300 italic text-[9px]">double-click to edit</span>}
+    </Tag>
+  );
+}
 
 export interface TemplateStyleConfig {
   layout: "single" | "sidebar" | "banner" | "minimal";
