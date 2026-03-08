@@ -1,5 +1,49 @@
-import React from "react";
+import React, { createContext, useContext } from "react";
 import { ResumeData } from "@/types/resume";
+
+// Inline edit context - templates can use this to make text editable
+const InlineEditContext = createContext<((field: string, value: any) => void) | null>(null);
+
+function EditableText({ value, field, as: Tag = "span", className, style }: {
+  value: string; field: string; as?: "span" | "p" | "h1" | "h2" | "div"; className?: string; style?: React.CSSProperties;
+}) {
+  const onEdit = useContext(InlineEditContext);
+  if (!onEdit) return <Tag className={className} style={style}>{value}</Tag>;
+  
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const el = e.currentTarget as HTMLElement;
+    el.contentEditable = "true";
+    el.focus();
+    el.classList.add("outline-none", "ring-2", "ring-blue-400/40", "rounded-sm");
+    
+    const handleBlur = () => {
+      el.contentEditable = "false";
+      el.classList.remove("outline-none", "ring-2", "ring-blue-400/40", "rounded-sm");
+      const newValue = el.textContent || "";
+      if (newValue !== value) onEdit(field, newValue);
+      el.removeEventListener("blur", handleBlur);
+      el.removeEventListener("keydown", handleKey);
+    };
+    const handleKey = (ke: KeyboardEvent) => {
+      if (ke.key === "Enter") { ke.preventDefault(); el.blur(); }
+      if (ke.key === "Escape") { el.textContent = value; el.blur(); }
+    };
+    el.addEventListener("blur", handleBlur);
+    el.addEventListener("keydown", handleKey);
+  };
+  
+  return (
+    <Tag
+      className={`${className || ""} cursor-pointer hover:ring-1 hover:ring-primary/20 hover:rounded-sm transition-all`}
+      style={style}
+      onDoubleClick={handleDoubleClick}
+      title="Double-click to edit"
+    >
+      {value || <span className="text-gray-300 italic text-[9px]">double-click to edit</span>}
+    </Tag>
+  );
+}
 
 export interface TemplateStyleConfig {
   layout: "single" | "sidebar" | "banner" | "minimal";
@@ -370,7 +414,7 @@ function renderSections(
     if (key === "summary" && data.summary) return (
       <HWrap key={key} changeType={ct("summary")}>
         <STitle title="Summary" style={config.sectionStyle} color={c} />
-        <p className="text-[10.5px] text-gray-700 leading-[1.6]">{data.summary}</p>
+        <EditableText value={data.summary} field="summary" as="p" className="text-[10.5px] text-gray-700 leading-[1.6]" />
       </HWrap>
     );
     if (key === "experience") return (
@@ -462,83 +506,92 @@ export interface TemplateExtraProps {
   sectionOrder?: SectionOrder[];
   changedFields?: Map<string, string>;
   showChanges?: boolean;
+  onInlineEdit?: (field: string, value: any) => void;
 }
 
 export function createTemplate(config: TemplateStyleConfig): React.FC<{ data: ResumeData } & TemplateExtraProps> {
-  const Component: React.FC<{ data: ResumeData } & TemplateExtraProps> = ({ data, sectionOrder, changedFields, showChanges }) => {
-    // Enhanced layouts that use sectionOrder + highlighting
+  const Component: React.FC<{ data: ResumeData } & TemplateExtraProps> = ({ data, sectionOrder, changedFields, showChanges, onInlineEdit }) => {
     const c = config.defaultAccent;
-    switch (config.layout) {
-      case "sidebar": {
-        const isLeft = config.sidebarSide !== "right";
-        const sidebarBg = config.sidebarBg || accent(c);
-        const sidebar = (
-          <div className="p-5 text-white min-h-full" style={{ background: sidebarBg, width: "35%" }}>
-            <h1 className="text-lg font-bold mb-0.5" style={{ fontFamily: config.fontHeading }}>{data.header.name}</h1>
-            <p className="text-[10px] opacity-80 mb-4">{data.header.title}</p>
-            <div className="space-y-3">
-              <div>
-                <p className="text-[9px] font-bold uppercase tracking-[0.2em] opacity-60 mb-1">Contact</p>
-                {[data.header.email, data.header.phone, data.header.location, data.header.linkedin, data.header.website].filter(Boolean).map((x, i) => (
-                  <p key={i} className="text-[9.5px] opacity-90">{x}</p>
-                ))}
-              </div>
-              {renderSections(data, config, sectionOrder, changedFields, showChanges, "sidebar-side")}
-            </div>
-          </div>
-        );
-        const main = (
-          <div className="p-6 flex-1" style={{ fontFamily: config.fontBody }}>
-            {renderSections(data, config, sectionOrder, changedFields, showChanges, "sidebar-main")}
-          </div>
-        );
-        return (
-          <div className="flex min-h-[1123px]" style={{ fontFamily: config.fontBody, color: "#1a1a1a" }}>
-            {isLeft ? <>{sidebar}{main}</> : <>{main}{sidebar}</>}
-          </div>
-        );
-      }
-      case "banner":
-        return (
-          <div style={{ fontFamily: config.fontBody, color: "#1a1a1a" }}>
-            <div className="px-8 py-6 text-white" style={{ background: `linear-gradient(135deg, ${accent(c)}, ${accent(c)}dd)` }}>
-              <h1 className="text-2xl font-bold" style={{ fontFamily: config.fontHeading }}>{data.header.name}</h1>
-              <p className="text-sm opacity-80 mt-0.5">{data.header.title}</p>
-              <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-2 text-[9.5px] opacity-75">
-                {[data.header.email, data.header.phone, data.header.location, data.header.linkedin].filter(Boolean).map((x, i) => <span key={i}>{x}</span>)}
+    
+    const content = (() => {
+      switch (config.layout) {
+        case "sidebar": {
+          const isLeft = config.sidebarSide !== "right";
+          const sidebarBg = config.sidebarBg || accent(c);
+          const sidebar = (
+            <div className="p-5 text-white min-h-full" style={{ background: sidebarBg, width: "35%" }}>
+              <EditableText value={data.header.name} field="header.name" as="h1" className="text-lg font-bold mb-0.5" style={{ fontFamily: config.fontHeading }} />
+              <EditableText value={data.header.title} field="header.title" as="p" className="text-[10px] opacity-80 mb-4" />
+              <div className="space-y-3">
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] opacity-60 mb-1">Contact</p>
+                  {[data.header.email, data.header.phone, data.header.location, data.header.linkedin, data.header.website].filter(Boolean).map((x, i) => (
+                    <p key={i} className="text-[9.5px] opacity-90">{x}</p>
+                  ))}
+                </div>
+                {renderSections(data, config, sectionOrder, changedFields, showChanges, "sidebar-side")}
               </div>
             </div>
-            <div className="px-8 py-5 text-[11px] leading-relaxed">
+          );
+          const main = (
+            <div className="p-6 flex-1" style={{ fontFamily: config.fontBody }}>
+              {renderSections(data, config, sectionOrder, changedFields, showChanges, "sidebar-main")}
+            </div>
+          );
+          return (
+            <div className="flex min-h-[1123px]" style={{ fontFamily: config.fontBody, color: "#1a1a1a" }}>
+              {isLeft ? <>{sidebar}{main}</> : <>{main}{sidebar}</>}
+            </div>
+          );
+        }
+        case "banner":
+          return (
+            <div style={{ fontFamily: config.fontBody, color: "#1a1a1a" }}>
+              <div className="px-8 py-6 text-white" style={{ background: `linear-gradient(135deg, ${accent(c)}, ${accent(c)}dd)` }}>
+                <EditableText value={data.header.name} field="header.name" as="h1" className="text-2xl font-bold" style={{ fontFamily: config.fontHeading }} />
+                <EditableText value={data.header.title} field="header.title" as="p" className="text-sm opacity-80 mt-0.5" />
+                <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-2 text-[9.5px] opacity-75">
+                  {[data.header.email, data.header.phone, data.header.location, data.header.linkedin].filter(Boolean).map((x, i) => <span key={i}>{x}</span>)}
+                </div>
+              </div>
+              <div className="px-8 py-5 text-[11px] leading-relaxed">
+                {renderSections(data, config, sectionOrder, changedFields, showChanges)}
+              </div>
+            </div>
+          );
+        case "minimal":
+          return (
+            <div className="px-10 py-8 text-[11px] leading-relaxed" style={{ fontFamily: config.fontBody, color: "#2a2a2a" }}>
+              <div className="mb-6">
+                <EditableText value={data.header.name} field="header.name" as="h1" className="text-2xl font-light tracking-wide" style={{ fontFamily: config.fontHeading, color: accent(c) }} />
+                <EditableText value={data.header.title} field="header.title" as="p" className="text-xs text-gray-400 mt-1 tracking-wider" />
+                <div className="flex gap-4 mt-2 text-[9px] text-gray-400 tracking-wide">
+                  {[data.header.email, data.header.phone, data.header.location, data.header.linkedin].filter(Boolean).map((x, i) => <span key={i}>{x}</span>)}
+                </div>
+                <div className="w-12 h-0.5 mt-4" style={{ background: accent(c) }} />
+              </div>
               {renderSections(data, config, sectionOrder, changedFields, showChanges)}
             </div>
-          </div>
-        );
-      case "minimal":
-        return (
-          <div className="px-10 py-8 text-[11px] leading-relaxed" style={{ fontFamily: config.fontBody, color: "#2a2a2a" }}>
-            <div className="mb-6">
-              <h1 className="text-2xl font-light tracking-wide" style={{ fontFamily: config.fontHeading, color: accent(c) }}>{data.header.name}</h1>
-              <p className="text-xs text-gray-400 mt-1 tracking-wider">{data.header.title}</p>
-              <div className="flex gap-4 mt-2 text-[9px] text-gray-400 tracking-wide">
-                {[data.header.email, data.header.phone, data.header.location, data.header.linkedin].filter(Boolean).map((x, i) => <span key={i}>{x}</span>)}
+          );
+        default:
+          return (
+            <div className="p-8 text-[11px] leading-relaxed" style={{ fontFamily: config.fontBody, color: "#1a1a1a" }}>
+              <div className={config.headerAlign === "center" ? "text-center mb-4" : "mb-4"}>
+                <EditableText value={data.header.name} field="header.name" as="h1" className="text-xl font-bold tracking-wide" style={{ fontFamily: config.fontHeading, color: accent(c) }} />
+                <EditableText value={data.header.title} field="header.title" as="p" className="text-xs text-gray-500 mt-0.5" />
+                {config.headerAlign === "center" ? <ContactLine h={data.header} /> : <ContactLineLeft h={data.header} />}
               </div>
-              <div className="w-12 h-0.5 mt-4" style={{ background: accent(c) }} />
+              {renderSections(data, config, sectionOrder, changedFields, showChanges)}
             </div>
-            {renderSections(data, config, sectionOrder, changedFields, showChanges)}
-          </div>
-        );
-      default:
-        return (
-          <div className="p-8 text-[11px] leading-relaxed" style={{ fontFamily: config.fontBody, color: "#1a1a1a" }}>
-            <div className={config.headerAlign === "center" ? "text-center mb-4" : "mb-4"}>
-              <h1 className="text-xl font-bold tracking-wide" style={{ fontFamily: config.fontHeading, color: accent(c) }}>{data.header.name}</h1>
-              <p className="text-xs text-gray-500 mt-0.5">{data.header.title}</p>
-              {config.headerAlign === "center" ? <ContactLine h={data.header} /> : <ContactLineLeft h={data.header} />}
-            </div>
-            {renderSections(data, config, sectionOrder, changedFields, showChanges)}
-          </div>
-        );
-    }
+          );
+      }
+    })();
+    
+    return (
+      <InlineEditContext.Provider value={onInlineEdit || null}>
+        {content}
+      </InlineEditContext.Provider>
+    );
   };
   Component.displayName = `Template`;
   return Component;

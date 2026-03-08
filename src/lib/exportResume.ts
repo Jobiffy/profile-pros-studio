@@ -9,8 +9,21 @@ export async function exportToPDF(elementId: string, fileName = "resume.pdf") {
   if (!el) return;
   const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
   const imgData = canvas.toDataURL("image/png");
-  const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [canvas.width / 2, canvas.height / 2] });
-  pdf.addImage(imgData, "PNG", 0, 0, canvas.width / 2, canvas.height / 2);
+  
+  const pageWidthPx = 794; // A4 width in px
+  const pageHeightPx = 1123; // A4 height in px
+  const contentHeight = canvas.height / 2; // because scale: 2
+  const totalPages = Math.max(1, Math.ceil(contentHeight / pageHeightPx));
+  
+  const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [pageWidthPx, pageHeightPx] });
+  
+  for (let page = 0; page < totalPages; page++) {
+    if (page > 0) pdf.addPage();
+    // Offset the image upward for each page
+    const yOffset = -page * pageHeightPx;
+    pdf.addImage(imgData, "PNG", 0, yOffset, canvas.width / 2, canvas.height / 2);
+  }
+  
   pdf.save(fileName);
 }
 
