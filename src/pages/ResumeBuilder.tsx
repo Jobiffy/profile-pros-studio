@@ -493,13 +493,15 @@ const ResumeBuilder = () => {
             style={{ transform: `scale(${previewScale})` }}
           >
             <MultiPageResume colorPalette={colorPalette}>
-              <TemplateComponent
-                data={orderedResumeData}
-                sectionOrder={sectionItems.map(s => ({ id: s.id, visible: s.visible }))}
-                changedFields={changedFields}
-                showChanges={showChanges}
-                onInlineEdit={updateField}
-              />
+              <InlineEditWrapper data={orderedResumeData} onEdit={updateField}>
+                <TemplateComponent
+                  data={orderedResumeData}
+                  sectionOrder={sectionItems.map(s => ({ id: s.id, visible: s.visible }))}
+                  changedFields={changedFields}
+                  showChanges={showChanges}
+                  onInlineEdit={updateField}
+                />
+              </InlineEditWrapper>
               {showChanges && changedFields.size > 0 && (
                 <div className="absolute inset-0 pointer-events-none">
                   <div className="absolute top-2 right-2 flex flex-col gap-1 pointer-events-auto">
