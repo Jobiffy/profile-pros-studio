@@ -311,9 +311,9 @@ const LinkedInReviewer = () => {
             {/* How it works */}
             <div className="grid grid-cols-3 gap-3 pt-4">
               {[
-                { step: "1", title: "Paste URL", desc: "Enter your LinkedIn profile link" },
-                { step: "2", title: "AI Analyzes", desc: "We fetch & score every section" },
-                { step: "3", title: "Get Results", desc: "Detailed feedback & improvements" },
+                { step: "1", title: "Copy Profile", desc: "Select all text from your LinkedIn page" },
+                { step: "2", title: "Paste & Analyze", desc: "AI scores every section out of 10" },
+                { step: "3", title: "Get Results", desc: "Issues, suggestions & projected scores" },
               ].map(s => (
                 <div key={s.step} className="text-center p-3 rounded-xl bg-muted/50">
                   <div className="w-7 h-7 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center mx-auto mb-1.5">{s.step}</div>
