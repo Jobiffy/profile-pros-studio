@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { templateList, templateComponents } from "@/templates";
 import { TemplateInfo } from "@/types/resume";
@@ -14,6 +14,7 @@ import { OnboardingTour } from "@/components/resume/OnboardingTour";
 import { ResumeImport } from "@/components/resume/ResumeImport";
 import { MultiPageResume } from "@/components/resume/MultiPageResume";
 import { InlineEditWrapper } from "@/components/resume/InlineEditWrapper";
+import { FloatingToolbar } from "@/components/resume/FloatingToolbar";
 import { ColorPalettePanel } from "@/components/resume/ColorPalette";
 import { SectionManager, SectionItem, getDefaultSections } from "@/components/resume/SectionManager";
 import { exportToPDF, exportToDOCX } from "@/lib/exportResume";
@@ -38,6 +39,7 @@ const ResumeBuilder = () => {
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [previewScale, setPreviewScale] = useState(0.65);
   const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains("dark"));
+  const previewContainerRef = useRef<HTMLDivElement>(null);
 
   const toggleTheme = useCallback(() => {
     const next = !darkMode;
@@ -483,8 +485,13 @@ const ResumeBuilder = () => {
           </div>
         </motion.div>
 
+        {/* Formatting Toolbar */}
+        <div className="shrink-0 flex items-center justify-center px-4 py-1.5 border-b border-border bg-card/60">
+          <FloatingToolbar containerRef={previewContainerRef} />
+        </div>
+
         {/* Preview Area */}
-        <div className="flex-1 overflow-auto flex justify-center items-start py-8 px-4 bg-muted/30 relative">
+        <div ref={previewContainerRef} className="flex-1 overflow-auto flex justify-center items-start py-8 px-4 bg-muted/30 relative">
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 30 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
