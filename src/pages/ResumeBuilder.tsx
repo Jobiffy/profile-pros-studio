@@ -491,22 +491,13 @@ const ResumeBuilder = () => {
             className="origin-top"
             style={{ transform: `scale(${previewScale})` }}
           >
-            <div
-              id="resume-preview"
-              className="w-[794px] min-h-[1123px] shadow-2xl rounded-sm overflow-hidden relative"
-              style={{
-                boxShadow: '0 8px 40px -8px hsl(var(--foreground) / 0.12)',
-                background: 'white',
-                ['--resume-accent' as any]: colorPalette.accent,
-                ['--resume-accent-light' as any]: colorPalette.accentLight,
-                ['--resume-accent-dark' as any]: colorPalette.accentDark,
-              }}
-            >
+            <MultiPageResume colorPalette={colorPalette}>
               <TemplateComponent
                 data={orderedResumeData}
                 sectionOrder={sectionItems.map(s => ({ id: s.id, visible: s.visible }))}
                 changedFields={changedFields}
                 showChanges={showChanges}
+                onInlineEdit={updateField}
               />
               {showChanges && changedFields.size > 0 && (
                 <div className="absolute inset-0 pointer-events-none">
@@ -529,7 +520,7 @@ const ResumeBuilder = () => {
                   </div>
                 </div>
               )}
-            </div>
+            </MultiPageResume>
           </motion.div>
         </div>
 
