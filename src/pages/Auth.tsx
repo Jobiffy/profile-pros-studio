@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -8,8 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import { Mail, ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useEffect } from "react";
-import jobiffyLogo from "@/assets/logo.jpg";
+import { JobiffyLogo } from "@/components/JobiffyLogo";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -51,23 +50,32 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
-      {/* Ambient background */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] rounded-full bg-accent/5 blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-primary/3 blur-[120px]" />
+      {/* Grid background */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border)/0.2)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border)/0.2)_1px,transparent_1px)] bg-[size:60px_60px] pointer-events-none" />
+      {/* Ambient */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          animate={{ scale: [1, 1.2, 1], opacity: [0.06, 0.12, 0.06] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-primary blur-[150px]"
+        />
+        <motion.div
+          animate={{ scale: [1.2, 1, 1.2], opacity: [0.04, 0.08, 0.04] }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute -bottom-40 -left-40 w-[500px] h-[500px] rounded-full bg-accent blur-[120px]"
+        />
       </div>
 
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.6 }}
         className="relative z-10 w-full max-w-md mx-4"
       >
-        <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl p-8 shadow-2xl shadow-primary/5">
+        <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-3xl p-8 shadow-2xl shadow-primary/5">
           {/* Logo */}
           <div className="flex flex-col items-center mb-8">
-            <img src={jobiffyLogo} alt="Jobiffy" className="h-10 mb-4" />
+            <JobiffyLogo size="lg" className="mb-4" />
             <h1 className="text-2xl font-bold text-foreground font-space">
               Welcome back
             </h1>
@@ -85,9 +93,14 @@ const Auth = () => {
                 exit={{ opacity: 0 }}
                 className="text-center py-6"
               >
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 200, delay: 0.1 }}
+                  className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4"
+                >
                   <CheckCircle2 className="w-8 h-8 text-primary" />
-                </div>
+                </motion.div>
                 <h3 className="text-lg font-semibold text-foreground mb-2">Check your email</h3>
                 <p className="text-muted-foreground text-sm">
                   We sent a magic link to <span className="font-medium text-foreground">{email}</span>
@@ -106,7 +119,7 @@ const Auth = () => {
                 <Button
                   onClick={handleGoogleSignIn}
                   disabled={loading}
-                  className="w-full h-12 bg-foreground text-background hover:bg-foreground/90 font-medium rounded-xl mb-4 text-base"
+                  className="w-full h-12 bg-foreground text-background hover:bg-foreground/90 font-medium rounded-xl mb-4 text-base transition-all duration-200 hover:shadow-lg"
                 >
                   {loading ? (
                     <Loader2 className="w-5 h-5 animate-spin mr-2" />
@@ -131,20 +144,20 @@ const Auth = () => {
                 {/* Email Magic Link */}
                 <form onSubmit={handleMagicLink} className="space-y-3">
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                       type="email"
                       placeholder="you@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10 h-12 rounded-xl bg-secondary/50 border-border/50 focus:border-primary"
+                      className="pl-10 h-12 rounded-xl bg-secondary/50 border-border/50 focus:border-primary transition-colors"
                       required
                     />
                   </div>
                   <Button
                     type="submit"
                     disabled={loading || !email.trim()}
-                    className="w-full h-12 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-medium text-base"
+                    className="w-full h-12 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-medium text-base shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all duration-200"
                   >
                     {loading ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
@@ -164,6 +177,18 @@ const Auth = () => {
             )}
           </AnimatePresence>
         </div>
+
+        {/* Back to home */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="text-center mt-6"
+        >
+          <Button variant="link" onClick={() => navigate("/")} className="text-muted-foreground text-sm">
+            ← Back to home
+          </Button>
+        </motion.div>
       </motion.div>
     </div>
   );
