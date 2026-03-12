@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import ResumeBuilder from "./pages/ResumeBuilder";
@@ -22,8 +23,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/builder" element={<ResumeBuilder />} />
-            <Route path="/linkedin-reviewer" element={<LinkedInReviewer />} />
+            <Route path="/builder" element={<ProtectedRoute><ResumeBuilder /></ProtectedRoute>} />
+            <Route path="/linkedin-reviewer" element={<ProtectedRoute><LinkedInReviewer /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
