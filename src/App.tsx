@@ -26,6 +26,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/builder" element={<ProtectedRoute><ResumeBuilder /></ProtectedRoute>} />
             <Route path="/linkedin-reviewer" element={<ProtectedRoute><LinkedInReviewer /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
