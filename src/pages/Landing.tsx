@@ -13,6 +13,7 @@ import {
 
 const Landing = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { scrollY } = useScroll();
   const navBg = useTransform(scrollY, [0, 100], [0, 1]);
   const [navOpaque, setNavOpaque] = useState(false);
