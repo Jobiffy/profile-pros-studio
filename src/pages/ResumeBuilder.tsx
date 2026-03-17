@@ -267,6 +267,18 @@ const ResumeBuilder = () => {
     resumeStore.addResume(`Resume ${resumeStore.resumes.length + 1}`, { ...dummyResume });
   }, [resumeStore]);
 
+  const handleAnalyzeATS = useCallback(async () => {
+    const ok = await credits.deductCredits("ats_check", "ATS Score analysis");
+    if (!ok) return;
+    analyzeATS();
+  }, [credits, analyzeATS]);
+
+  const handleMatchJD = useCallback(async (jd: string) => {
+    const ok = await credits.deductCredits("jd_match", "JD Match analysis");
+    if (!ok) return;
+    matchJD(jd);
+  }, [credits, matchJD]);
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {showOnboarding && (
