@@ -3,6 +3,8 @@ import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { JobiffyLogo } from "@/components/JobiffyLogo";
+import { ProfileDropdown } from "@/components/ProfileDropdown";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Target, Briefcase, MessageSquare, Sparkles, ArrowRight,
   Star, Linkedin, Check, Zap, Shield, Globe,
@@ -11,6 +13,7 @@ import {
 
 const Landing = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { scrollY } = useScroll();
   const navBg = useTransform(scrollY, [0, 100], [0, 1]);
   const [navOpaque, setNavOpaque] = useState(false);
@@ -95,13 +98,19 @@ const Landing = () => {
             <a href="#testimonials" className="hover:text-foreground transition-colors duration-200">Reviews</a>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" onClick={() => navigate("/auth")} className="text-sm font-medium">
-              Sign In
-            </Button>
-            <Button onClick={() => navigate("/auth")} className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300">
-              Get Started
-              <ArrowRight className="w-4 h-4 ml-1" />
-            </Button>
+            {user ? (
+              <ProfileDropdown />
+            ) : (
+              <>
+                <Button variant="ghost" onClick={() => navigate("/auth")} className="text-sm font-medium">
+                  Sign In
+                </Button>
+                <Button onClick={() => navigate("/auth")} className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300">
+                  Get Started
+                  <ArrowRight className="w-4 h-4 ml-1" />
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </motion.nav>
