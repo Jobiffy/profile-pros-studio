@@ -631,7 +631,7 @@ const ResumeBuilder = () => {
             <AnimatePresence mode="wait">
               {rightPanel === "ats" && (
                 <motion.div key="ats" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full">
-                  <ATSScorePanel result={atsResult} loading={atsLoading} onAnalyze={analyzeATS} />
+                  <ATSScorePanel result={atsResult} loading={atsLoading} onAnalyze={handleAnalyzeATS} />
                 </motion.div>
               )}
               {rightPanel === "jd" && (
