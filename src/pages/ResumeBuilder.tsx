@@ -505,6 +505,11 @@ const ResumeBuilder = () => {
               {darkMode ? <Sun size={15} /> : <Moon size={15} />}
             </motion.button>
 
+            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => navigate("/profile")}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all">
+              <User size={14} /> Profile
+            </motion.button>
+
             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setShowImport(true)}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all">
               <Upload size={14} /> Import
