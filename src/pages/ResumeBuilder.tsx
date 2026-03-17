@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { templateList, templateComponents } from "@/templates";
 import { TemplateInfo } from "@/types/resume";
 import { dummyResume } from "@/data/dummyResume";
 import { useResumeData } from "@/hooks/useResumeData";
 import { useResumeAI } from "@/hooks/useResumeAI";
 import { useResumeStore } from "@/hooks/useResumeStore";
+import { useCredits } from "@/hooks/useCredits";
 import { ResumeEditPanel } from "@/components/resume/ResumeEditPanel";
 import { ATSScorePanel } from "@/components/resume/ATSScorePanel";
 import { JDMatchPanel } from "@/components/resume/JDMatchPanel";
@@ -25,7 +27,7 @@ import {
   FileText, Sparkles, MessageSquare, Target, Briefcase,
   Download, Upload, Palette, Zap, Eye, EyeOff,
   PanelLeftClose, PanelLeftOpen, LayoutList, Sun, Moon, FileDown,
-  Plus, X, FileEdit, Linkedin,
+  Plus, X, FileEdit, Linkedin, Coins, User,
 } from "lucide-react";
 
 type RightPanel = "none" | "ats" | "jd" | "chat";
