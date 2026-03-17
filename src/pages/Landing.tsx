@@ -3,6 +3,8 @@ import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { JobiffyLogo } from "@/components/JobiffyLogo";
+import { ProfileDropdown } from "@/components/ProfileDropdown";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Target, Briefcase, MessageSquare, Sparkles, ArrowRight,
   Star, Linkedin, Check, Zap, Shield, Globe,

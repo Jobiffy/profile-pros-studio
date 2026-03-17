@@ -14,10 +14,12 @@ import {
 
 export const ProfileDropdown: React.FC = () => {
   const { user, signOut } = useAuth();
-  const { balance, loading } = useCredits();
+  const credits = useCredits();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
+  const balance = credits.balance;
+  const loading = credits.loading;
   const [displayName, setDisplayName] = useState(
     user?.user_metadata?.full_name || user?.user_metadata?.name || ""
   );
