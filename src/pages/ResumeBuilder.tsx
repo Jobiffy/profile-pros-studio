@@ -639,7 +639,7 @@ const ResumeBuilder = () => {
                   <JDMatchPanel
                     result={jdResult}
                     loading={jdLoading}
-                    onMatch={matchJD}
+                    onMatch={handleMatchJD}
                     onTailor={handleTailorResume}
                     tailorLoading={tailorLoading}
                   />
