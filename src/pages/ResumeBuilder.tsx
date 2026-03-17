@@ -238,7 +238,7 @@ const ResumeBuilder = () => {
       onMarkChanged: markChanged,
       onSetShowChanges: setShowChanges,
     });
-  }, [sendChatMessage, updateField, markChanged, setResumeData, setShowChanges]);
+  }, [sendChatMessage, updateField, markChanged, setResumeData, setShowChanges, credits]);
 
   const handleImport = (data: any, fileName?: string) => {
     // Replace current resume content with parsed data
