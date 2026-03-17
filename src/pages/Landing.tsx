@@ -98,13 +98,19 @@ const Landing = () => {
             <a href="#testimonials" className="hover:text-foreground transition-colors duration-200">Reviews</a>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" onClick={() => navigate("/auth")} className="text-sm font-medium">
-              Sign In
-            </Button>
-            <Button onClick={() => navigate("/auth")} className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300">
-              Get Started
-              <ArrowRight className="w-4 h-4 ml-1" />
-            </Button>
+            {user ? (
+              <ProfileDropdown />
+            ) : (
+              <>
+                <Button variant="ghost" onClick={() => navigate("/auth")} className="text-sm font-medium">
+                  Sign In
+                </Button>
+                <Button onClick={() => navigate("/auth")} className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300">
+                  Get Started
+                  <ArrowRight className="w-4 h-4 ml-1" />
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </motion.nav>
