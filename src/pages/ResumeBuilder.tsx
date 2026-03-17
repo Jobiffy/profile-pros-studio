@@ -190,7 +190,9 @@ const ResumeBuilder = () => {
     setRightPanel(prev => prev === panel ? "none" : panel);
   };
 
-  const handleChatSend = useCallback((msg: string) => {
+  const handleChatSend = useCallback(async (msg: string) => {
+    const ok = await credits.deductCredits("ai_chat", "AI Chat message");
+    if (!ok) return;
     sendChatMessage(msg, {
       onUpdateField: (field, value) => {
         updateField(field, value);
