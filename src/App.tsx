@@ -9,6 +9,7 @@ import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import ResumeBuilder from "./pages/ResumeBuilder";
 import LinkedInReviewer from "./pages/LinkedInReviewer";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
