@@ -9,6 +9,7 @@ import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import ResumeBuilder from "./pages/ResumeBuilder";
 import LinkedInReviewer from "./pages/LinkedInReviewer";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +26,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/builder" element={<ProtectedRoute><ResumeBuilder /></ProtectedRoute>} />
             <Route path="/linkedin-reviewer" element={<ProtectedRoute><LinkedInReviewer /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

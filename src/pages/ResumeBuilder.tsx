@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { templateList, templateComponents } from "@/templates";
 import { TemplateInfo } from "@/types/resume";
 import { dummyResume } from "@/data/dummyResume";
 import { useResumeData } from "@/hooks/useResumeData";
 import { useResumeAI } from "@/hooks/useResumeAI";
 import { useResumeStore } from "@/hooks/useResumeStore";
+import { useCredits } from "@/hooks/useCredits";
 import { ResumeEditPanel } from "@/components/resume/ResumeEditPanel";
 import { ATSScorePanel } from "@/components/resume/ATSScorePanel";
 import { JDMatchPanel } from "@/components/resume/JDMatchPanel";
@@ -25,13 +27,15 @@ import {
   FileText, Sparkles, MessageSquare, Target, Briefcase,
   Download, Upload, Palette, Zap, Eye, EyeOff,
   PanelLeftClose, PanelLeftOpen, LayoutList, Sun, Moon, FileDown,
-  Plus, X, FileEdit, Linkedin,
+  Plus, X, FileEdit, Linkedin, Coins, User,
 } from "lucide-react";
 
 type RightPanel = "none" | "ats" | "jd" | "chat";
 type LeftTab = "edit" | "templates" | "sections";
 
 const ResumeBuilder = () => {
+  const navigate = useNavigate();
+  const credits = useCredits();
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateInfo>(templateList[0]);
   const [leftTab, setLeftTab] = useState<LeftTab>("edit");
   const [rightPanel, setRightPanel] = useState<RightPanel>("none");
@@ -186,7 +190,9 @@ const ResumeBuilder = () => {
     setRightPanel(prev => prev === panel ? "none" : panel);
   };
 
-  const handleChatSend = useCallback((msg: string) => {
+  const handleChatSend = useCallback(async (msg: string) => {
+    const ok = await credits.deductCredits("ai_chat", "AI Chat message");
+    if (!ok) return;
     sendChatMessage(msg, {
       onUpdateField: (field, value) => {
         updateField(field, value);
@@ -232,7 +238,7 @@ const ResumeBuilder = () => {
       onMarkChanged: markChanged,
       onSetShowChanges: setShowChanges,
     });
-  }, [sendChatMessage, updateField, markChanged, setResumeData, setShowChanges]);
+  }, [sendChatMessage, updateField, markChanged, setResumeData, setShowChanges, credits]);
 
   const handleImport = (data: any, fileName?: string) => {
     // Replace current resume content with parsed data
@@ -260,6 +266,18 @@ const ResumeBuilder = () => {
   const handleNewResume = useCallback(() => {
     resumeStore.addResume(`Resume ${resumeStore.resumes.length + 1}`, { ...dummyResume });
   }, [resumeStore]);
+
+  const handleAnalyzeATS = useCallback(async () => {
+    const ok = await credits.deductCredits("ats_check", "ATS Score analysis");
+    if (!ok) return;
+    analyzeATS();
+  }, [credits, analyzeATS]);
+
+  const handleMatchJD = useCallback(async (jd: string) => {
+    const ok = await credits.deductCredits("jd_match", "JD Match analysis");
+    if (!ok) return;
+    matchJD(jd);
+  }, [credits, matchJD]);
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -438,6 +456,18 @@ const ResumeBuilder = () => {
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium flex items-center gap-1">
               <Zap size={9} /> AI
             </span>
+
+            {/* Credit Badge */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => navigate("/profile")}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold hover:bg-primary/15 transition-all ml-2"
+              title="Manage credits"
+            >
+              <Coins size={12} />
+              {credits.balance !== null ? credits.balance : "..."} credits
+            </motion.button>
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -473,6 +503,11 @@ const ResumeBuilder = () => {
               className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
               title={darkMode ? "Switch to light mode" : "Switch to dark mode"}>
               {darkMode ? <Sun size={15} /> : <Moon size={15} />}
+            </motion.button>
+
+            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => navigate("/profile")}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all">
+              <User size={14} /> Profile
             </motion.button>
 
             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setShowImport(true)}
@@ -601,7 +636,7 @@ const ResumeBuilder = () => {
             <AnimatePresence mode="wait">
               {rightPanel === "ats" && (
                 <motion.div key="ats" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full">
-                  <ATSScorePanel result={atsResult} loading={atsLoading} onAnalyze={analyzeATS} />
+                  <ATSScorePanel result={atsResult} loading={atsLoading} onAnalyze={handleAnalyzeATS} />
                 </motion.div>
               )}
               {rightPanel === "jd" && (
@@ -609,7 +644,7 @@ const ResumeBuilder = () => {
                   <JDMatchPanel
                     result={jdResult}
                     loading={jdLoading}
-                    onMatch={matchJD}
+                    onMatch={handleMatchJD}
                     onTailor={handleTailorResume}
                     tailorLoading={tailorLoading}
                   />
