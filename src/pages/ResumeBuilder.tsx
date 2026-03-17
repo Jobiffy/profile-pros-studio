@@ -34,6 +34,8 @@ type RightPanel = "none" | "ats" | "jd" | "chat";
 type LeftTab = "edit" | "templates" | "sections";
 
 const ResumeBuilder = () => {
+  const navigate = useNavigate();
+  const credits = useCredits();
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateInfo>(templateList[0]);
   const [leftTab, setLeftTab] = useState<LeftTab>("edit");
   const [rightPanel, setRightPanel] = useState<RightPanel>("none");
