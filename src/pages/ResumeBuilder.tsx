@@ -456,6 +456,18 @@ const ResumeBuilder = () => {
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium flex items-center gap-1">
               <Zap size={9} /> AI
             </span>
+
+            {/* Credit Badge */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => navigate("/profile")}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold hover:bg-primary/15 transition-all ml-2"
+              title="Manage credits"
+            >
+              <Coins size={12} />
+              {credits.balance !== null ? credits.balance : "..."} credits
+            </motion.button>
           </div>
 
           <div className="flex items-center gap-1.5">
