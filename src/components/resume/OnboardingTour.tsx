@@ -1,8 +1,18 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Target, Briefcase, MessageSquare, FileText, Sparkles, Download, X, ArrowRight, Star, Zap, Linkedin } from "lucide-react";
+import { Target, Briefcase, MessageSquare, FileText, Sparkles, Download, X, ArrowRight, Star, Zap, Linkedin, type LucideIcon } from "lucide-react";
 
-const steps = [
+interface Step {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  highlight: string;
+  isUSP: boolean;
+  uspLabel?: string;
+  uspColor?: string;
+}
+
+const steps: Step[] = [
   {
     icon: Sparkles,
     title: "Welcome to Jobiffy! 🎉",
@@ -109,24 +119,24 @@ export function OnboardingTour({ onComplete, onNavigate }: Props) {
           exit={{ opacity: 0, scale: 0.9, y: -20 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
           className={`bg-card border rounded-2xl p-6 max-w-md mx-4 shadow-2xl relative overflow-hidden ${
-            (current as any).isUSP ? "border-primary/40" : "border-border"
+            current.isUSP ? "border-primary/40" : "border-border"
           }`}
         >
           {/* USP badge */}
-          {(current as any).isUSP && (
+          {current.isUSP && (
             <motion.div
               initial={{ x: 100 }}
               animate={{ x: 0 }}
-              className={`absolute top-0 right-0 px-3 py-1 rounded-bl-xl text-[9px] font-bold text-white tracking-wider bg-gradient-to-r ${(current as any).uspColor}`}
+              className={`absolute top-0 right-0 px-3 py-1 rounded-bl-xl text-[9px] font-bold text-white tracking-wider bg-gradient-to-r ${current.uspColor}`}
             >
               <Star size={8} className="inline mr-1" />
-              {(current as any).uspLabel}
+              {current.uspLabel}
             </motion.div>
           )}
 
           {/* Decorative glow for USP steps */}
-          {(current as any).isUSP && (
-            <div className={`absolute -top-20 -right-20 w-40 h-40 rounded-full opacity-10 bg-gradient-to-br ${(current as any).uspColor} blur-3xl`} />
+          {current.isUSP && (
+            <div className={`absolute -top-20 -right-20 w-40 h-40 rounded-full opacity-10 bg-gradient-to-br ${current.uspColor} blur-3xl`} />
           )}
 
           <div className="flex justify-between items-start mb-4 relative">
@@ -135,12 +145,12 @@ export function OnboardingTour({ onComplete, onNavigate }: Props) {
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: "spring" }}
               className={`w-14 h-14 rounded-xl flex items-center justify-center ${
-                (current as any).isUSP 
-                  ? `bg-gradient-to-br ${(current as any).uspColor} shadow-lg`
+                current.isUSP 
+                  ? `bg-gradient-to-br ${current.uspColor} shadow-lg`
                   : "bg-primary/10"
               }`}
             >
-              <current.icon size={26} className={(current as any).isUSP ? "text-white" : "text-primary"} />
+              <current.icon size={26} className={current.isUSP ? "text-white" : "text-primary"} />
             </motion.div>
             <button onClick={() => { setVisible(false); onComplete(); }} className="text-muted-foreground hover:text-foreground transition-colors">
               <X size={18} />
@@ -151,7 +161,7 @@ export function OnboardingTour({ onComplete, onNavigate }: Props) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className={`text-lg font-bold mb-2 ${(current as any).isUSP ? "text-primary" : "text-foreground"}`}
+            className={`text-lg font-bold mb-2 ${current.isUSP ? "text-primary" : "text-foreground"}`}
           >
             {current.title}
           </motion.h3>
@@ -172,7 +182,7 @@ export function OnboardingTour({ onComplete, onNavigate }: Props) {
                   animate={{
                     width: i === step ? 24 : 6,
                     backgroundColor: i === step 
-                      ? ((steps[i] as any).isUSP ? "hsl(var(--primary))" : "hsl(var(--primary))") 
+                      ? (steps[i].isUSP ? "hsl(var(--primary))" : "hsl(var(--primary))") 
                       : i < step ? "hsl(var(--primary) / 0.4)" : "hsl(var(--border))",
                   }}
                   className="h-1.5 rounded-full"
@@ -190,8 +200,8 @@ export function OnboardingTour({ onComplete, onNavigate }: Props) {
                 whileTap={{ scale: 0.98 }}
                 onClick={handleNext}
                 className={`px-5 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                  (current as any).isUSP 
-                    ? `bg-gradient-to-r ${(current as any).uspColor} text-white shadow-md` 
+                  current.isUSP 
+                    ? `bg-gradient-to-r ${current.uspColor} text-white shadow-md` 
                     : "bg-primary text-primary-foreground hover:opacity-90"
                 }`}
               >

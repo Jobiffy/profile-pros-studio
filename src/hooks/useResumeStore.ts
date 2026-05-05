@@ -23,7 +23,7 @@ function loadResumes(): SavedResume[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
-  } catch {}
+  } catch { /* localStorage unavailable; fall through to default */ }
   // Default: one resume
   const defaultResume: SavedResume = {
     id: generateId(),
@@ -39,7 +39,7 @@ function loadResumes(): SavedResume[] {
 function saveResumes(resumes: SavedResume[]) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(resumes));
-  } catch {}
+  } catch { /* localStorage unavailable; fall through to default */ }
 }
 
 function loadActiveId(): string | null {
@@ -53,7 +53,7 @@ function loadActiveId(): string | null {
 function saveActiveId(id: string) {
   try {
     localStorage.setItem(ACTIVE_KEY, id);
-  } catch {}
+  } catch { /* localStorage unavailable; fall through to default */ }
 }
 
 export function useResumeStore() {

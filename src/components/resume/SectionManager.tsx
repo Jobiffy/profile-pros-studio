@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
+import type { LucideIcon } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -29,7 +30,7 @@ const DEFAULT_SECTIONS: SectionItem[] = [
   { id: "leadership", label: "Leadership", visible: true, isCustom: false },
 ];
 
-const SECTION_ICONS: Record<string, any> = {
+const SECTION_ICONS: Record<string, LucideIcon> = {
   summary: FileText, experience: Briefcase, education: GraduationCap,
   skills: Wrench, projects: FolderOpen, certifications: Award,
   leadership: Users, volunteering: Heart, publications: BookOpen,

@@ -3,11 +3,11 @@ import { templateList } from "@/templates";
 import { TemplateInfo } from "@/types/resume";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState } from "react";
-import { Briefcase, Code, Layout, GraduationCap, Heart, Search, TrendingUp, BarChart3, LineChart, Package, Check } from "lucide-react";
+import { Briefcase, Code, Layout, GraduationCap, Heart, Search, TrendingUp, BarChart3, LineChart, Package, Check, type LucideIcon } from "lucide-react";
 
 type CategoryFilter = "all" | "marketing" | "sales" | "consulting" | "pm" | "tech" | "hr" | "freshers" | "generic" | "finance" | "operations" | "project_management";
 
-const categoryMeta: Record<string, { icon: any; label: string }> = {
+const categoryMeta: Record<string, { icon: LucideIcon; label: string }> = {
   all: { icon: Layout, label: "All" },
   marketing: { icon: TrendingUp, label: "Marketing" },
   sales: { icon: BarChart3, label: "Sales" },

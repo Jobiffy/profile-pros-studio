@@ -24,8 +24,18 @@ export interface JDMatchResult {
 export interface ToolCallAction {
   id: string;
   name: string;
-  arguments: any;
+  arguments: Record<string, unknown>;
 }
+
+// Per-tool argument shape used to narrow arguments when dispatching tool calls
+// from the chat handler. The server-side Gemini tool schema enforces these.
+type ToolArgs = {
+  update_section: { field: string; value: unknown; change_type?: string };
+  reorder_sections: { section_order: string[] };
+  toggle_section: { section_id: string; visible: boolean };
+  add_item: { section: string; item: unknown };
+  remove_item: { section: string; index: number };
+};
 
 export type ChatMessage = {
   role: "user" | "assistant";
@@ -104,10 +114,10 @@ export function useResumeAI(resumeData: ResumeData) {
   const sendChatMessage = useCallback(async (
     userMessage: string,
     handlers?: {
-      onUpdateField?: (field: string, value: any) => void;
+      onUpdateField?: (field: string, value: unknown) => void;
       onReorderSections?: (order: string[]) => void;
       onToggleSection?: (sectionId: string, visible: boolean) => void;
-      onAddItem?: (section: string, item: any) => void;
+      onAddItem?: (section: string, item: unknown) => void;
       onRemoveItem?: (section: string, index: number) => void;
       onMarkChanged?: (field: string, changeType?: string) => void;
       onSetShowChanges?: (show: boolean) => void;
@@ -140,46 +150,50 @@ export function useResumeAI(resumeData: ResumeData) {
 
       // Execute tool calls
       for (const tc of toolCalls) {
-        const args = tc.arguments;
         switch (tc.name) {
           case "update_section": {
+            const a = tc.arguments as ToolArgs["update_section"];
             if (handlers?.onUpdateField) {
-              handlers.onUpdateField(args.field, args.value);
-              const changeType = args.change_type || "content";
+              handlers.onUpdateField(a.field, a.value);
+              const changeType = a.change_type || "content";
               // Store the FULL field path for granular highlighting
-              handlers?.onMarkChanged?.(args.field, changeType);
+              handlers?.onMarkChanged?.(a.field, changeType);
               const typeLabels: Record<string, string> = { grammar: "📝", content: "✏️", keyword: "🔑", formatting: "🎨" };
-              appliedActions.push(`${typeLabels[changeType] || "✏️"} Updated **${args.field}** (${changeType})`);
+              appliedActions.push(`${typeLabels[changeType] || "✏️"} Updated **${a.field}** (${changeType})`);
             }
             break;
           }
           case "reorder_sections": {
+            const a = tc.arguments as ToolArgs["reorder_sections"];
             if (handlers?.onReorderSections) {
-              handlers.onReorderSections(args.section_order);
-              appliedActions.push(`🔀 Reordered sections: ${args.section_order.join(" → ")}`);
+              handlers.onReorderSections(a.section_order);
+              appliedActions.push(`🔀 Reordered sections: ${a.section_order.join(" → ")}`);
             }
             break;
           }
           case "toggle_section": {
+            const a = tc.arguments as ToolArgs["toggle_section"];
             if (handlers?.onToggleSection) {
-              handlers.onToggleSection(args.section_id, args.visible);
-              appliedActions.push(`${args.visible ? "👁️ Showed" : "🙈 Hidden"} **${args.section_id}** section`);
+              handlers.onToggleSection(a.section_id, a.visible);
+              appliedActions.push(`${a.visible ? "👁️ Showed" : "🙈 Hidden"} **${a.section_id}** section`);
             }
             break;
           }
           case "add_item": {
+            const a = tc.arguments as ToolArgs["add_item"];
             if (handlers?.onAddItem) {
-              handlers.onAddItem(args.section, args.item);
-              handlers?.onMarkChanged?.(args.section);
-              appliedActions.push(`➕ Added new item to **${args.section}**`);
+              handlers.onAddItem(a.section, a.item);
+              handlers?.onMarkChanged?.(a.section);
+              appliedActions.push(`➕ Added new item to **${a.section}**`);
             }
             break;
           }
           case "remove_item": {
+            const a = tc.arguments as ToolArgs["remove_item"];
             if (handlers?.onRemoveItem) {
-              handlers.onRemoveItem(args.section, args.index);
-              handlers?.onMarkChanged?.(args.section);
-              appliedActions.push(`🗑️ Removed item ${args.index} from **${args.section}**`);
+              handlers.onRemoveItem(a.section, a.index);
+              handlers?.onMarkChanged?.(a.section);
+              appliedActions.push(`🗑️ Removed item ${a.index} from **${a.section}**`);
             }
             break;
           }

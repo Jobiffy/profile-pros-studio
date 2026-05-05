@@ -112,12 +112,11 @@ export function ResumeImport({ open, onClose, onImport }: Props) {
         description: `Successfully parsed "${file.name}"`,
       });
       onClose();
-    } catch (e: any) {
+    } catch (e) {
       console.error("Import error:", e);
       toast({
         title: "Import failed",
-        description:
-          e.message || "Could not parse the resume. Try a .docx or .pdf format.",
+        description: e instanceof Error ? e.message : "Could not parse the resume. Try a .docx or .pdf format.",
         variant: "destructive",
       });
     } finally {

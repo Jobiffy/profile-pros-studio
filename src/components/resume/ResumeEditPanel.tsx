@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   User, Briefcase, GraduationCap, Wrench, FolderOpen, Award, Users,
-  FileText, Plus, Trash2, ChevronDown, X
+  FileText, Plus, Trash2, ChevronDown, X, type LucideIcon
 } from "lucide-react";
 import { useState } from "react";
 
@@ -14,9 +14,9 @@ interface Props {
   data: ResumeData;
   onUpdateHeader: (key: keyof ResumeData["header"], value: string) => void;
   onUpdateSummary: (value: string) => void;
-  onUpdateExperience: (index: number, field: string, value: any) => void;
-  onUpdateEducation: (index: number, field: string, value: any) => void;
-  onUpdateField: (field: string, value: any) => void;
+  onUpdateExperience: (index: number, field: string, value: unknown) => void;
+  onUpdateEducation: (index: number, field: string, value: unknown) => void;
+  onUpdateField: (field: string, value: unknown) => void;
   onAddExperience: () => void;
   onRemoveExperience: (i: number) => void;
   onAddEducation: () => void;
@@ -41,7 +41,7 @@ const sectionVariants = {
 function SectionToggle({
   icon: Icon, label, children, defaultOpen = false, onAdd, addLabel
 }: {
-  icon: any; label: string; children: React.ReactNode; defaultOpen?: boolean;
+  icon: LucideIcon; label: string; children: React.ReactNode; defaultOpen?: boolean;
   onAdd?: () => void; addLabel?: string;
 }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -245,7 +245,7 @@ export function ResumeEditPanel(props: Props) {
                       onUpdateField("projects", projects);
                     }} rows={2} className="text-xs bg-background border-border/60 resize-none flex-1" />
                     <button
-                      onClick={() => props.onRemoveBullet("projects" as any, i, bi)}
+                      onClick={() => props.onRemoveBullet("projects", i, bi)}
                       className="w-5 h-5 mt-1.5 rounded flex items-center justify-center text-muted-foreground opacity-0 group-hover/bullet:opacity-100 hover:text-destructive transition-all"
                     >
                       <X size={10} />
@@ -253,7 +253,7 @@ export function ResumeEditPanel(props: Props) {
                   </div>
                 ))}
                 <button
-                  onClick={() => props.onAddBullet("projects" as any, i)}
+                  onClick={() => props.onAddBullet("projects", i)}
                   className="text-[10px] text-muted-foreground hover:text-primary flex items-center gap-1 mt-1 transition-colors"
                 >
                   <Plus size={10} /> Add bullet

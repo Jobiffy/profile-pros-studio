@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { templateList, templateComponents } from "@/templates";
-import { TemplateInfo } from "@/types/resume";
+import { TemplateInfo, ResumeData } from "@/types/resume";
 import { dummyResume } from "@/data/dummyResume";
 import { useResumeData } from "@/hooks/useResumeData";
 import { useResumeAI } from "@/hooks/useResumeAI";
@@ -235,7 +235,7 @@ const ResumeBuilder = () => {
     });
   }, [sendChatMessage, updateField, markChanged, setResumeData, setShowChanges, credits]);
 
-  const handleImport = (data: any, fileName?: string) => {
+  const handleImport = (data: ResumeData, fileName?: string) => {
     // Replace current resume content with parsed data
     setResumeData(data);
     resetHistory(data);

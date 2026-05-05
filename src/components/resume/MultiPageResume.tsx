@@ -43,10 +43,10 @@ export function MultiPageResume({ children, colorPalette, previewId = "resume-pr
           minHeight: `${A4_HEIGHT}px`,
           boxShadow: '0 8px 40px -8px hsl(var(--foreground) / 0.12)',
           background: 'white',
-          ['--resume-accent' as any]: colorPalette.accent,
-          ['--resume-accent-light' as any]: colorPalette.accentLight,
-          ['--resume-accent-dark' as any]: colorPalette.accentDark,
-        }}
+          '--resume-accent': colorPalette.accent,
+          '--resume-accent-light': colorPalette.accentLight,
+          '--resume-accent-dark': colorPalette.accentDark,
+        } as React.CSSProperties}
       >
         <div ref={contentRef}>
           {children}

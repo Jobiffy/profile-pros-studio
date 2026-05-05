@@ -4,7 +4,7 @@ import { ResumeData } from "@/types/resume";
 interface Props {
   children: React.ReactNode;
   data: ResumeData;
-  onEdit?: (field: string, value: any) => void;
+  onEdit?: (field: string, value: unknown) => void;
 }
 
 /**
@@ -212,7 +212,7 @@ export function InlineEditWrapper({ children, data, onEdit }: Props) {
         const sel = window.getSelection();
         sel?.removeAllRanges();
         sel?.addRange(range);
-      } catch {}
+      } catch { /* selection API can throw on detached nodes; safe to ignore */ }
 
       const cleanup = () => {
         editEl.contentEditable = "false";
@@ -303,11 +303,11 @@ function getDirectTextContent(el: HTMLElement): string {
 function getFieldValue(data: ResumeData, field: string): string | undefined {
   const parts = field.match(/([^[.\]]+)/g);
   if (!parts) return undefined;
-  let target: any = data;
+  let target: unknown = data;
   for (const part of parts) {
+    if (target == null || typeof target !== "object") return undefined;
     const key = isNaN(Number(part)) ? part : Number(part);
-    target = target?.[key];
-    if (target === undefined) return undefined;
+    target = (target as Record<string, unknown>)[key as string];
   }
   return typeof target === "string" ? target : undefined;
 }

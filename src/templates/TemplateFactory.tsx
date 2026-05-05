@@ -2,7 +2,7 @@ import React, { createContext, useContext } from "react";
 import { ResumeData } from "@/types/resume";
 
 // Inline edit context - templates can use this to make text editable
-const InlineEditContext = createContext<((field: string, value: any) => void) | null>(null);
+const InlineEditContext = createContext<((field: string, value: unknown) => void) | null>(null);
 
 function EditableText({ value, field, as: Tag = "span", className, style }: {
   value: string; field: string; as?: "span" | "p" | "h1" | "h2" | "div"; className?: string; style?: React.CSSProperties;

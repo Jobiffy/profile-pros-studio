@@ -103,7 +103,7 @@ export function useResumeData() {
     setResumeDataWithHistory(prev => ({ ...prev, summary: value }));
   }, [setResumeDataWithHistory]);
 
-  const updateExperience = useCallback((index: number, field: string, value: any) => {
+  const updateExperience = useCallback((index: number, field: string, value: unknown) => {
     setResumeDataWithHistory(prev => {
       const exp = [...prev.experience];
       exp[index] = { ...exp[index], [field]: value };
@@ -111,7 +111,7 @@ export function useResumeData() {
     });
   }, [setResumeDataWithHistory]);
 
-  const updateEducation = useCallback((index: number, field: string, value: any) => {
+  const updateEducation = useCallback((index: number, field: string, value: unknown) => {
     setResumeDataWithHistory(prev => {
       const edu = [...prev.education];
       edu[index] = { ...edu[index], [field]: value };

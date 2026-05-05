@@ -56,8 +56,8 @@ export function JDMatchPanel({ result, loading, onMatch, onTailor, tailorLoading
       } else {
         throw new Error("Could not extract job description from the URL");
       }
-    } catch (e: any) {
-      toast({ title: "Failed to fetch JD", description: e.message || "Try pasting the JD manually instead.", variant: "destructive" });
+    } catch (e) {
+      toast({ title: "Failed to fetch JD", description: e instanceof Error ? e.message : "Try pasting the JD manually instead.", variant: "destructive" });
     } finally {
       setFetchingUrl(false);
     }
