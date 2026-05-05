@@ -4,15 +4,18 @@ import { Upload, Loader2, CheckCircle2, X, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ResumeData } from "@/types/resume";
 import { toast } from "@/hooks/use-toast";
-import mammoth from "mammoth";
-import * as pdfjsLib from "pdfjs-dist";
-import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 
+// pdf.js (~1.5 MB) and mammoth (~300 KB) are loaded only when the user
+// actually imports a resume — keeps them out of the initial bundle.
 async function extractTextFromPdf(file: File): Promise<string> {
+  const [pdfjsLib, workerModule] = await Promise.all([
+    import("pdfjs-dist"),
+    import("pdfjs-dist/build/pdf.worker.min.mjs?url"),
+  ]);
+  pdfjsLib.GlobalWorkerOptions.workerSrc = workerModule.default;
+
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   let fullText = "";
@@ -28,6 +31,7 @@ async function extractTextFromPdf(file: File): Promise<string> {
 }
 
 async function extractTextFromDocx(file: File): Promise<string> {
+  const { default: mammoth } = await import("mammoth");
   const arrayBuffer = await file.arrayBuffer();
   const result = await mammoth.extractRawText({ arrayBuffer });
   return result.value;

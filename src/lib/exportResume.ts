@@ -1,12 +1,16 @@
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle } from "docx";
-import { saveAs } from "file-saver";
 import { ResumeData } from "@/types/resume";
 
+// html2canvas (~360 KB) + jspdf (~700 KB) + docx (~250 KB) + file-saver
+// are only needed when the user clicks Export, so dynamic-import them
+// inside each handler. Keeps them out of the initial bundle.
 export async function exportToPDF(elementId: string, fileName = "resume.pdf") {
   const el = document.getElementById(elementId);
   if (!el) return;
+
+  const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+    import("html2canvas"),
+    import("jspdf"),
+  ]);
 
   // Hide page-break indicators before capturing
   const indicators = el.querySelectorAll<HTMLElement>("[data-page-indicator]");
@@ -17,25 +21,39 @@ export async function exportToPDF(elementId: string, fileName = "resume.pdf") {
   // Restore indicators
   indicators.forEach(ind => ind.style.display = "");
   const imgData = canvas.toDataURL("image/png");
-  
+
   const pageWidthPx = 794; // A4 width in px
   const pageHeightPx = 1123; // A4 height in px
   const contentHeight = canvas.height / 2; // because scale: 2
   const totalPages = Math.max(1, Math.ceil(contentHeight / pageHeightPx));
-  
+
   const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [pageWidthPx, pageHeightPx] });
-  
+
   for (let page = 0; page < totalPages; page++) {
     if (page > 0) pdf.addPage();
     // Offset the image upward for each page
     const yOffset = -page * pageHeightPx;
     pdf.addImage(imgData, "PNG", 0, yOffset, canvas.width / 2, canvas.height / 2);
   }
-  
+
   pdf.save(fileName);
 }
 
 export async function exportToDOCX(data: ResumeData, fileName = "resume.docx") {
+  const [{ Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle }, { saveAs }] = await Promise.all([
+    import("docx"),
+    import("file-saver"),
+  ]);
+
+  function sectionHeading(text: string): Paragraph {
+    return new Paragraph({
+      children: [new TextRun({ text, bold: true, size: 22, font: "Calibri", color: "333333" })],
+      heading: HeadingLevel.HEADING_2,
+      spacing: { before: 240, after: 80 },
+      border: { bottom: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" } },
+    });
+  }
+
   const children: Paragraph[] = [];
 
   // Header
@@ -218,13 +236,4 @@ export async function exportToDOCX(data: ResumeData, fileName = "resume.docx") {
 
   const blob = await Packer.toBlob(doc);
   saveAs(blob, fileName);
-}
-
-function sectionHeading(text: string): Paragraph {
-  return new Paragraph({
-    children: [new TextRun({ text, bold: true, size: 22, font: "Calibri", color: "333333" })],
-    heading: HeadingLevel.HEADING_2,
-    spacing: { before: 240, after: 80 },
-    border: { bottom: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" } },
-  });
 }
