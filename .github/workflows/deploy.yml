@@ -41,6 +41,23 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
 
+      - name: Diagnose deploy key (safe — does not leak the secret)
+        run: |
+          echo "==> Key file size: $(wc -c < ~/.ssh/deploy_key) bytes ($(wc -l < ~/.ssh/deploy_key) lines)"
+          echo "==> First line:"
+          head -1 ~/.ssh/deploy_key
+          echo "==> Last line:"
+          tail -1 ~/.ssh/deploy_key
+          echo "==> ssh-keygen format check:"
+          if ssh-keygen -y -f ~/.ssh/deploy_key >/dev/null 2>&1; then
+            echo "OK — key parses cleanly"
+            echo "Public key fingerprint:"
+            ssh-keygen -l -f ~/.ssh/deploy_key
+          else
+            echo "FAIL — key cannot be parsed by ssh-keygen"
+            ssh-keygen -y -f ~/.ssh/deploy_key 2>&1 | head -5 || true
+          fi
+
       # Two-phase rsync so the SPA shell never points at assets that haven't
       # landed yet. Hashed assets first (safe to coexist with old ones),
       # then index.html last — the moment it lands, new visitors get the
