@@ -34,7 +34,10 @@ jobs:
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key
+          # printf + tr -d '\r' guards against CRLF line endings if the
+          # secret was pasted from a Windows clipboard. OpenSSH's libcrypto
+          # parser rejects the key with "error in libcrypto" on \r.
+          printf '%s\n' "${{ secrets.EC2_SSH_KEY }}" | tr -d '\r' > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
 
