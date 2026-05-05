@@ -1,0 +1,66 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Allow only one deploy at a time; cancel any in-flight one when a newer push lands.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
+
+      # Two-phase rsync so the SPA shell never points at assets that haven't
+      # landed yet. Hashed assets first (safe to coexist with old ones),
+      # then index.html last — the moment it lands, new visitors get the
+      # new bundle in one consistent fetch.
+      - name: Upload hashed assets
+        run: |
+          rsync -avz --no-times --omit-dir-times \
+            --exclude index.html \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes" \
+            dist/ \
+            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/dev/ai-resume-builder/"
+
+      - name: Upload index.html
+        run: |
+          rsync -avz \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes" \
+            dist/index.html \
+            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/dev/ai-resume-builder/index.html"
+
+      # Best-effort cleanup of stale hashed assets older than 14 days.
+      # Keeps the directory bounded without breaking in-flight loads from
+      # users who started fetching the previous bundle.
+      - name: Prune old assets
+        run: |
+          ssh -i ~/.ssh/deploy_key "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
+            'find /var/www/dev/ai-resume-builder/assets -type f -mtime +14 -delete 2>/dev/null || true'

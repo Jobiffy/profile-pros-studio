@@ -26,7 +26,7 @@ const Auth = () => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: window.location.origin },
+        options: { redirectTo: window.location.origin + import.meta.env.BASE_URL },
       });
       if (error) {
         toast({ title: "Sign in failed", description: error.message, variant: "destructive" });
@@ -47,7 +47,7 @@ const Auth = () => {
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
-        options: { emailRedirectTo: window.location.origin },
+        options: { emailRedirectTo: window.location.origin + import.meta.env.BASE_URL },
       });
       if (error) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
