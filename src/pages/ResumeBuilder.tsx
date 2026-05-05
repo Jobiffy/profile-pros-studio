@@ -576,10 +576,9 @@ const ResumeBuilder = () => {
         <div ref={previewContainerRef} className="flex-1 overflow-auto flex justify-center items-start py-8 px-4 bg-muted/30 relative">
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 30 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ delay: 0.3, type: "spring", damping: 25 }}
+            animate={{ opacity: 1, scale: previewScale, y: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
             className="origin-top"
-            style={{ transform: `scale(${previewScale})` }}
           >
             <MultiPageResume colorPalette={colorPalette}>
               <InlineEditWrapper data={orderedResumeData} onEdit={updateField}>
