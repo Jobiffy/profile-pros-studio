@@ -11,8 +11,12 @@ import { JobiffyLogo } from "@/components/JobiffyLogo";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
+  // Track which flow is in flight separately so a click on Magic Link
+  // doesn't make the Google button look like it's also loading.
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [magicLoading, setMagicLoading] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const anyLoading = googleLoading || magicLoading;
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -21,8 +25,8 @@ const Auth = () => {
   }, [user, navigate]);
 
   const handleGoogleSignIn = async () => {
-    if (loading) return;
-    setLoading(true);
+    if (anyLoading) return;
+    setGoogleLoading(true);
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -30,20 +34,20 @@ const Auth = () => {
       });
       if (error) {
         toast({ title: "Sign in failed", description: error.message, variant: "destructive" });
-        setLoading(false);
+        setGoogleLoading(false);
       }
       // On success the browser navigates away; loading stays true until unmount.
     } catch (e) {
       toast({ title: "Sign in failed", description: e instanceof Error ? e.message : "Unknown error", variant: "destructive" });
-      setLoading(false);
+      setGoogleLoading(false);
     }
   };
 
   const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading) return;
+    if (anyLoading) return;
     if (!email.trim()) return;
-    setLoading(true);
+    setMagicLoading(true);
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
@@ -57,7 +61,7 @@ const Auth = () => {
     } catch (e) {
       toast({ title: "Error", description: e instanceof Error ? e.message : "Unknown error", variant: "destructive" });
     } finally {
-      setLoading(false);
+      setMagicLoading(false);
     }
   };
 
@@ -131,10 +135,10 @@ const Auth = () => {
                 {/* Google Sign In */}
                 <Button
                   onClick={handleGoogleSignIn}
-                  disabled={loading}
+                  disabled={anyLoading}
                   className="w-full h-12 bg-foreground text-background hover:bg-foreground/90 font-medium rounded-xl mb-4 text-base transition-all duration-200 hover:shadow-lg"
                 >
-                  {loading ? (
+                  {googleLoading ? (
                     <Loader2 className="w-5 h-5 animate-spin mr-2" />
                   ) : (
                     <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
@@ -169,10 +173,10 @@ const Auth = () => {
                   </div>
                   <Button
                     type="submit"
-                    disabled={loading || !email.trim()}
+                    disabled={anyLoading || !email.trim()}
                     className="w-full h-12 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-medium text-base shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all duration-200"
                   >
-                    {loading ? (
+                    {magicLoading ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
                     ) : (
                       <>
