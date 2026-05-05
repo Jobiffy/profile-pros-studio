@@ -5,6 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Send, Loader2, Bot, User, Sparkles, Zap, Mic, MicOff, CheckCircle2, ArrowUpRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import rehypeSanitize from "rehype-sanitize";
 
 interface Props {
   messages: ChatMessage[];
@@ -174,6 +175,7 @@ export function AIChatPanel({ messages, loading, onSend, resumeName }: Props) {
                             {msg.appliedActions.map((action, j) => (
                               <div key={j} className="text-[10px] text-emerald-700 dark:text-emerald-300">
                                 <ReactMarkdown
+                                  rehypePlugins={[rehypeSanitize]}
                                   components={{
                                     p: ({ children }) => <span>{children}</span>,
                                     strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
@@ -186,7 +188,7 @@ export function AIChatPanel({ messages, loading, onSend, resumeName }: Props) {
                       )}
                       {msg.content && (
                         <div className="prose prose-xs max-w-none [&_p]:my-1 [&_ul]:my-1 [&_li]:my-0 [&_code]:text-[10px] [&_code]:bg-muted [&_code]:px-1 [&_code]:rounded">
-                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                          <ReactMarkdown rehypePlugins={[rehypeSanitize]}>{msg.content}</ReactMarkdown>
                         </div>
                       )}
                     </div>

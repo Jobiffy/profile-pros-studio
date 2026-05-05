@@ -1,18 +1,18 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, FileText, Loader2, CheckCircle2, X, AlertCircle } from "lucide-react";
+import { Upload, Loader2, CheckCircle2, X, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ResumeData } from "@/types/resume";
 import { toast } from "@/hooks/use-toast";
 import mammoth from "mammoth";
+import * as pdfjsLib from "pdfjs-dist";
+import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 
-// Dynamically load pdf.js from CDN
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+
+const MAX_FILE_BYTES = 5 * 1024 * 1024;
+
 async function extractTextFromPdf(file: File): Promise<string> {
-  // @ts-ignore - dynamic CDN import
-  const pdfjsLib = await import(/* @vite-ignore */ "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.min.mjs");
-  pdfjsLib.GlobalWorkerOptions.workerSrc =
-    "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.worker.min.mjs";
-
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   let fullText = "";
@@ -20,7 +20,7 @@ async function extractTextFromPdf(file: File): Promise<string> {
     const page = await pdf.getPage(i);
     const textContent = await page.getTextContent();
     const pageText = textContent.items
-      .map((item: any) => item.str)
+      .map((item) => ("str" in item ? item.str : ""))
       .join(" ");
     fullText += pageText + "\n";
   }
@@ -47,6 +47,14 @@ export function ResumeImport({ open, onClose, onImport }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const parseFile = async (file: File) => {
+    if (file.size > MAX_FILE_BYTES) {
+      toast({
+        title: "File too large",
+        description: `Max size is 5 MB. "${file.name}" is ${(file.size / (1024 * 1024)).toFixed(1)} MB.`,
+        variant: "destructive",
+      });
+      return;
+    }
     setFileName(file.name);
     setParsing(true);
     setProgress(10);
