@@ -88,13 +88,15 @@ const ResumeBuilder = () => {
 
   const handleAddCustomSection = useCallback((title: string) => {
     resumeState.addCustomSection();
+    let newIndex = 0;
     setResumeData(prev => {
       const customs = [...(prev.customSections || [])];
-      customs[customs.length - 1] = { ...customs[customs.length - 1], title };
+      newIndex = customs.length - 1;
+      customs[newIndex] = { ...customs[newIndex], title };
       return { ...prev, customSections: customs };
     });
-    setSectionItems(prev => [...prev, { id: `custom_${(resumeData.customSections || []).length}`, label: title, visible: true, isCustom: true }]);
-  }, [resumeState, resumeData.customSections, setResumeData]);
+    setSectionItems(prev => [...prev, { id: `custom_${newIndex}`, label: title, visible: true, isCustom: true }]);
+  }, [resumeState, setResumeData]);
 
   const handleRemoveCustomSection = useCallback((sectionId: string) => {
     const idx = parseInt(sectionId.split("_")[1]);
@@ -214,25 +216,18 @@ const ResumeBuilder = () => {
       onToggleSection: (sectionId: string, visible: boolean) => {
         setSectionItems(prev => prev.map(s => s.id === sectionId ? { ...s, visible } : s));
       },
-      onAddItem: (section: string, item: any) => {
+      onAddItem: (section: string, item: unknown) => {
         setResumeData(prev => {
-          const next = JSON.parse(JSON.stringify(prev));
-          if (section === "experience") next.experience.push(item);
-          else if (section === "education") next.education.push(item);
-          else if (section === "skills") next.skills.push(item);
-          else if (section === "projects") (next.projects = next.projects || []).push(item);
-          else if (section === "certifications") (next.certifications = next.certifications || []).push(item);
-          else if (section === "leadership") (next.leadership = next.leadership || []).push(item);
-          return next;
+          const list = (prev as Record<string, unknown>)[section];
+          const arr = Array.isArray(list) ? list : [];
+          return { ...prev, [section]: [...arr, item] } as typeof prev;
         });
       },
       onRemoveItem: (section: string, index: number) => {
         setResumeData(prev => {
-          const next = JSON.parse(JSON.stringify(prev));
-          if (next[section] && Array.isArray(next[section])) {
-            next[section].splice(index, 1);
-          }
-          return next;
+          const list = (prev as Record<string, unknown>)[section];
+          if (!Array.isArray(list)) return prev;
+          return { ...prev, [section]: list.filter((_, i) => i !== index) } as typeof prev;
         });
       },
       onMarkChanged: markChanged,
@@ -274,10 +269,19 @@ const ResumeBuilder = () => {
   }, [credits, analyzeATS]);
 
   const handleMatchJD = useCallback(async (jd: string) => {
+    if (!jd?.trim()) {
+      toast({ title: "Job description required", description: "Paste a JD first.", variant: "destructive" });
+      return;
+    }
     const ok = await credits.deductCredits("jd_match", "JD Match analysis");
     if (!ok) return;
     matchJD(jd);
   }, [credits, matchJD]);
+
+  const exportFileBase = useCallback(() => {
+    const name = resumeData.header?.name?.trim();
+    return name ? name.replace(/\s+/g, "_") : "Resume";
+  }, [resumeData.header?.name]);
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -543,7 +547,7 @@ const ResumeBuilder = () => {
             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
               onClick={async () => {
                 toast({ title: "Exporting DOCX..." });
-                await exportToDOCX(orderedResumeData, `${resumeData.header.name.replace(/\s+/g, '_')}_Resume.docx`);
+                await exportToDOCX(orderedResumeData, `${exportFileBase()}_Resume.docx`);
                 toast({ title: "DOCX downloaded!" });
               }}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all">
@@ -553,7 +557,7 @@ const ResumeBuilder = () => {
             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
               onClick={async () => {
                 toast({ title: "Exporting PDF..." });
-                await exportToPDF("resume-preview", `${resumeData.header.name.replace(/\s+/g, '_')}_Resume.pdf`);
+                await exportToPDF("resume-preview", `${exportFileBase()}_Resume.pdf`);
                 toast({ title: "PDF downloaded!" });
               }}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium bg-primary text-primary-foreground shadow-sm hover:opacity-90 transition-opacity" id="export-btn">

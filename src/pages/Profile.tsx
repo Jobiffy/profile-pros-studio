@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { toast } from "@/hooks/use-toast";
 
 const topUpOptions = [
   { amount: 25, price: "₹49", popular: false },
@@ -33,15 +34,25 @@ const Profile = () => {
   const [topUpLoading, setTopUpLoading] = useState<number | null>(null);
 
   const handleTopUp = async (amount: number) => {
+    if (topUpLoading !== null) return;
     setTopUpLoading(amount);
-    // Simulate payment — in production, integrate Stripe/Razorpay
-    await new Promise(r => setTimeout(r, 1200));
-    await addCredits(amount, `Top-up: +${amount} credits`);
-    setTopUpLoading(null);
+    try {
+      await addCredits(amount, `Top-up: +${amount} credits`);
+      toast({ title: "Credits added", description: `+${amount} credits` });
+    } catch (e) {
+      toast({ title: "Top-up failed", description: e instanceof Error ? e.message : "Please try again.", variant: "destructive" });
+    } finally {
+      setTopUpLoading(null);
+    }
   };
 
   const handleSignOut = async () => {
-    await signOut();
+    try {
+      await signOut();
+    } catch (e) {
+      toast({ title: "Sign out failed", description: e instanceof Error ? e.message : "Please try again.", variant: "destructive" });
+      return;
+    }
     navigate("/");
   };
 

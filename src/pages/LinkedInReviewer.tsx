@@ -157,6 +157,7 @@ const LinkedInReviewer = () => {
   const [result, setResult] = useState<LinkedInReviewResult | null>(null);
 
   const handleAnalyze = async () => {
+    if (loading) return;
     if (!profileText.trim() || profileText.trim().length < 50) {
       toast({ title: "More content needed", description: "Please paste your full LinkedIn profile content (at least 50 characters).", variant: "destructive" });
       return;
@@ -164,21 +165,23 @@ const LinkedInReviewer = () => {
 
     setLoading(true);
     setResult(null);
-    setLoadingStep("Analyzing profile sections with AI...");
+    setLoadingStep("Analyzing profile with AI...");
 
     try {
-      setTimeout(() => setLoadingStep("Scoring each section..."), 3000);
-      setTimeout(() => setLoadingStep("Generating recommendations..."), 6000);
-
       const { data, error } = await supabase.functions.invoke("linkedin-review", {
         body: { linkedinUrl: linkedinUrl.trim() || undefined, profileText },
       });
-      if (error) throw new Error(typeof error === "object" && error.message ? error.message : "Analysis failed");
-      if (data?.error) throw new Error(data.error);
+      if (error) {
+        const msg = typeof error === "object" && error !== null && "message" in error && typeof (error as { message: unknown }).message === "string"
+          ? (error as { message: string }).message
+          : "Analysis failed";
+        throw new Error(msg);
+      }
+      if (data?.error) throw new Error(typeof data.error === "string" ? data.error : "Analysis failed");
       setResult(data as LinkedInReviewResult);
-      toast({ title: "Analysis Complete! 🎉", description: "Your LinkedIn profile has been reviewed." });
-    } catch (e: any) {
-      toast({ title: "Analysis Failed", description: e.message, variant: "destructive" });
+      toast({ title: "Analysis Complete!", description: "Your LinkedIn profile has been reviewed." });
+    } catch (e) {
+      toast({ title: "Analysis Failed", description: e instanceof Error ? e.message : "Unknown error", variant: "destructive" });
     } finally {
       setLoading(false);
       setLoadingStep("");
@@ -278,9 +281,10 @@ const LinkedInReviewer = () => {
                   placeholder={`Paste your full LinkedIn profile text here...\n\nTip: Go to your LinkedIn profile, press Ctrl+A to select all, then Ctrl+C to copy, and paste here.`}
                   className="min-h-[200px] text-sm"
                   value={profileText}
-                  onChange={e => setProfileText(e.target.value)}
+                  onChange={e => setProfileText(e.target.value.slice(0, 50_000))}
+                  maxLength={50_000}
                 />
-                <p className="text-xs text-muted-foreground mt-1">{profileText.length} characters</p>
+                <p className="text-xs text-muted-foreground mt-1">{profileText.length} / 50,000 characters</p>
               </div>
 
               <Button

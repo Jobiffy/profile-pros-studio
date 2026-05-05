@@ -21,30 +21,43 @@ const Auth = () => {
   }, [user, navigate]);
 
   const handleGoogleSignIn = async () => {
+    if (loading) return;
     setLoading(true);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: window.location.origin },
-    });
-    if (error) {
-      toast({ title: "Sign in failed", description: error.message, variant: "destructive" });
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.origin },
+      });
+      if (error) {
+        toast({ title: "Sign in failed", description: error.message, variant: "destructive" });
+        setLoading(false);
+      }
+      // On success the browser navigates away; loading stays true until unmount.
+    } catch (e) {
+      toast({ title: "Sign in failed", description: e instanceof Error ? e.message : "Unknown error", variant: "destructive" });
       setLoading(false);
     }
   };
 
   const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     if (!email.trim()) return;
     setLoading(true);
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: { emailRedirectTo: window.location.origin },
-    });
-    setLoading(false);
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      setMagicLinkSent(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: { emailRedirectTo: window.location.origin },
+      });
+      if (error) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+      } else {
+        setMagicLinkSent(true);
+      }
+    } catch (e) {
+      toast({ title: "Error", description: e instanceof Error ? e.message : "Unknown error", variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
   };
 
