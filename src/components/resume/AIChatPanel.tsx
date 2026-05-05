@@ -64,17 +64,30 @@ export function AIChatPanel({ messages, loading, onSend, resumeName }: Props) {
     setInput("");
   };
 
+  // Defensive teardown: detach listeners before stop() so a late onresult /
+  // onend / onerror that fires after stop can't hit a state setter on an
+  // unmounted component. Some browsers fire one trailing event post-stop.
+  // .stop() can throw InvalidStateError if already stopped — swallow it.
+  const teardownRecognition = () => {
+    const r = recognitionRef.current;
+    if (!r) return;
+    r.onresult = null;
+    r.onend = null;
+    r.onerror = null;
+    try { r.stop(); } catch { /* already stopped */ }
+    recognitionRef.current = null;
+  };
+
   const toggleVoice = () => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) return;
     if (isListening) {
-      recognitionRef.current?.stop();
+      teardownRecognition();
       setIsListening(false);
       return;
     }
     // Tear down any prior instance before starting a new one so we don't
     // leak event handlers from a previous start/stop cycle.
-    recognitionRef.current?.stop();
-    recognitionRef.current = null;
+    teardownRecognition();
 
     const SpeechRecognition = (window as unknown as { SpeechRecognition?: new () => SpeechRecognitionLike; webkitSpeechRecognition?: new () => SpeechRecognitionLike }).SpeechRecognition
       || (window as unknown as { webkitSpeechRecognition?: new () => SpeechRecognitionLike }).webkitSpeechRecognition;
@@ -97,7 +110,8 @@ export function AIChatPanel({ messages, loading, onSend, resumeName }: Props) {
   };
 
   useEffect(() => {
-    return () => { recognitionRef.current?.stop(); };
+    return () => { teardownRecognition(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const hasSpeech = typeof window !== "undefined" && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window);

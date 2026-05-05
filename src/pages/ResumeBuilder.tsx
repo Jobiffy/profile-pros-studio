@@ -102,7 +102,18 @@ const ResumeBuilder = () => {
     const idx = parseInt(sectionId.split("_")[1]);
     if (!isNaN(idx)) {
       resumeState.removeCustomSection(idx);
-      setSectionItems(prev => prev.filter(s => s.id !== sectionId));
+      // The customSections array shifts on removal, so any sectionItems
+      // whose `custom_N` id pointed past the removed slot would now
+      // reference customSections[N] = undefined and silently disappear
+      // from the rendered preview. Renumber custom_* ids in encounter
+      // order so they stay aligned with the post-splice array indices.
+      setSectionItems(prev => {
+        const filtered = prev.filter(s => s.id !== sectionId);
+        let customCounter = 0;
+        return filtered.map(s =>
+          s.isCustom ? { ...s, id: `custom_${customCounter++}` } : s,
+        );
+      });
     }
   }, [resumeState]);
 
@@ -115,7 +126,7 @@ const ResumeBuilder = () => {
     tailorLoading, tailorResume,
     chatMessages, chatLoading, sendChatMessage,
     setChatMessages,
-  } = useResumeAI(resumeData);
+  } = useResumeAI(resumeData, resumeStore.activeId);
 
   // Load chat messages from store when switching resumes
   useEffect(() => {

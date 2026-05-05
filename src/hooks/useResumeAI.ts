@@ -44,7 +44,7 @@ export type ChatMessage = {
   appliedActions?: string[]; // human-readable descriptions of applied actions
 };
 
-export function useResumeAI(resumeData: ResumeData) {
+export function useResumeAI(resumeData: ResumeData, resumeId: string) {
   const [atsResult, setAtsResult] = useState<ATSResult | null>(null);
   const [jdResult, setJdResult] = useState<JDMatchResult | null>(null);
   const [atsLoading, setAtsLoading] = useState(false);
@@ -57,12 +57,17 @@ export function useResumeAI(resumeData: ResumeData) {
   // these the callback would be recreated on every keystroke (resumeData),
   // every message (chatMessages), and every loading toggle, cascading
   // unnecessary re-renders down to AIChatPanel.
+  // resumeIdRef gates the in-flight chat response: if the user switches
+  // resumes mid-call, the response (and any tool-call dispatch) is dropped
+  // so it doesn't apply to a different resume.
   const chatMessagesRef = useRef<ChatMessage[]>([]);
   const chatLoadingRef = useRef(false);
   const resumeDataRef = useRef(resumeData);
+  const resumeIdRef = useRef(resumeId);
   useEffect(() => { chatMessagesRef.current = chatMessages; }, [chatMessages]);
   useEffect(() => { chatLoadingRef.current = chatLoading; }, [chatLoading]);
   useEffect(() => { resumeDataRef.current = resumeData; }, [resumeData]);
+  useEffect(() => { resumeIdRef.current = resumeId; }, [resumeId]);
 
   const analyzeATS = useCallback(async () => {
     setAtsLoading(true);
@@ -124,6 +129,10 @@ export function useResumeAI(resumeData: ResumeData) {
     }
   ) => {
     if (chatLoadingRef.current) return;
+    // Snapshot the active resume id at send time. If the user switches
+    // resumes before the response arrives, we drop it instead of letting
+    // the assistant message + tool-call dispatch land on the wrong resume.
+    const sentForResumeId = resumeIdRef.current;
     const userMsg: ChatMessage = { role: "user", content: userMessage };
     setChatMessages(prev => [...prev, userMsg]);
     setChatLoading(true);
@@ -137,6 +146,11 @@ export function useResumeAI(resumeData: ResumeData) {
       const { data, error } = await supabase.functions.invoke("resume-ai", {
         body: { action: "chat", resumeData: resumeDataRef.current, messages: allMessages },
       });
+
+      // Drop the response if the user has switched resumes mid-call. The
+      // user message was already persisted to the original resume's chat
+      // history before the switch; the orphaned reply just doesn't land.
+      if (resumeIdRef.current !== sentForResumeId) return;
 
       if (error) {
         console.error("Chat invoke error:", error);
@@ -215,9 +229,16 @@ export function useResumeAI(resumeData: ResumeData) {
       setChatMessages(prev => [...prev, assistantMsg]);
 
     } catch (e) {
-      toast({ title: "Chat Error", description: e instanceof Error ? e.message : "Unknown error", variant: "destructive" });
+      // Only surface the error toast if we're still on the resume that
+      // sent the request — a "Chat Error" pop on resume B for a failure
+      // that happened on A would be confusing.
+      if (resumeIdRef.current === sentForResumeId) {
+        toast({ title: "Chat Error", description: e instanceof Error ? e.message : "Unknown error", variant: "destructive" });
+      }
     } finally {
-      setChatLoading(false);
+      if (resumeIdRef.current === sentForResumeId) {
+        setChatLoading(false);
+      }
     }
   }, []);
 
