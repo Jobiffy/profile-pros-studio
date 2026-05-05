@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { callGemini, GeminiError } from "../_shared/gemini.ts";
+import { callGemini, transientGeminiResponse } from "../_shared/gemini.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -97,10 +97,8 @@ Evaluate every section thoroughly. For each section, identify specific issues an
         forcedTool: "linkedin_review",
       }));
     } catch (e) {
-      if (e instanceof GeminiError && e.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
+      const transient = transientGeminiResponse(e, corsHeaders);
+      if (transient) return transient;
       console.error("Gemini error:", e instanceof Error ? e.message : e);
       return new Response(JSON.stringify({ error: "AI analysis failed. Please try again." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });

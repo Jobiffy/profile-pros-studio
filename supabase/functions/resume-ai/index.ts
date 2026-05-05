@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { callGemini, GeminiError } from "../_shared/gemini.ts";
+import { callGemini, transientGeminiResponse } from "../_shared/gemini.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -483,11 +483,8 @@ INSTRUCTIONS:
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       } catch (e) {
-        if (e instanceof GeminiError && e.status === 429) {
-          return new Response(JSON.stringify({ error: "Rate limited. Please try again shortly." }), {
-            status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
+        const transient = transientGeminiResponse(e, corsHeaders);
+        if (transient) return transient;
         console.error("Gemini error:", e instanceof Error ? e.message : e);
         throw new Error("AI gateway error");
       }
@@ -519,11 +516,8 @@ INSTRUCTIONS:
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     } catch (e) {
-      if (e instanceof GeminiError && e.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limited. Please try again shortly." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      const transient = transientGeminiResponse(e, corsHeaders);
+      if (transient) return transient;
       console.error("Gemini error:", e instanceof Error ? e.message : e);
       throw new Error("AI gateway error");
     }

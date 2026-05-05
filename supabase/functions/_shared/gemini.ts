@@ -27,6 +27,32 @@ export class GeminiError extends Error {
   }
 }
 
+/**
+ * Map a Gemini failure to a client-safe Response for transient cases.
+ * Returns null for unknown errors so callers fall through to their own
+ * generic handler. We treat 429 (quota) and any 5xx (upstream blip,
+ * including the common 503 ServiceUnavailable) as user-retryable.
+ */
+export function transientGeminiResponse(
+  e: unknown,
+  corsHeaders: Record<string, string>,
+): Response | null {
+  if (!(e instanceof GeminiError)) return null;
+  if (e.status === 429) {
+    return new Response(JSON.stringify({ error: "Rate limited. Please try again shortly." }), {
+      status: 429,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  if (e.status >= 500 && e.status <= 599) {
+    return new Response(
+      JSON.stringify({ error: "AI service temporarily unavailable. Please try again." }),
+      { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+  return null;
+}
+
 // Gemini's function declarations use OpenAPI schema, which doesn't support a few
 // JSON Schema keywords. Strip them recursively before sending.
 function stripUnsupportedKeywords(value: unknown): unknown {
@@ -80,18 +106,33 @@ export async function callGemini(opts: {
 
   if (generationConfig) body.generationConfig = generationConfig;
 
-  const resp = await fetch(`${GEMINI_API_BASE}/${model}:generateContent`, {
+  const url = `${GEMINI_API_BASE}/${model}:generateContent`;
+  const init: RequestInit = {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "x-goog-api-key": apiKey,
     },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(45_000),
-  });
+  };
 
-  if (!resp.ok) {
-    throw new GeminiError(resp.status, await resp.text());
+  // Retry once on transient upstream issues (429 quota blips and any 5xx).
+  // Gemini's 503 ServiceUnavailable shows up sporadically under load and
+  // almost always succeeds on the next attempt. A single 1s backoff is
+  // enough to cover that without compounding edge-function latency.
+  let resp: Response | undefined;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    resp = await fetch(url, { ...init, signal: AbortSignal.timeout(45_000) });
+    if (resp.ok) break;
+    if (attempt === 0 && (resp.status === 429 || resp.status >= 500)) {
+      await new Promise((r) => setTimeout(r, 1000));
+      continue;
+    }
+    break;
+  }
+
+  if (!resp || !resp.ok) {
+    throw new GeminiError(resp?.status ?? 0, resp ? await resp.text() : "no response");
   }
 
   const data = await resp.json();
