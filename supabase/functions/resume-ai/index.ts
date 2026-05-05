@@ -1,5 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { callGemini, transientGeminiResponse } from "../_shared/gemini.ts";
+import {
+  callGemini,
+  transientGeminiResponse,
+  internalErrorResponse,
+  userErrorResponse,
+  type ErrorContext,
+} from "../_shared/gemini.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -254,23 +260,27 @@ const chatTools = [
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  // Prefer Supabase's per-request id when present so client + edge logs +
+  // dashboard logs all share the same correlation key.
+  const ctx: ErrorContext = {
+    requestId: req.headers.get("sb-request-id") ?? crypto.randomUUID(),
+    fn: "resume-ai",
+  };
+
   let body: { action?: string; resumeData?: unknown; jobDescription?: string; messages?: unknown[]; rawText?: string; url?: string };
   try {
     body = await req.json();
   } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
-      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return userErrorResponse("Invalid JSON body", 400, ctx, corsHeaders);
   }
 
   try {
     const { action, resumeData, jobDescription, messages, rawText, url } = body;
+    if (action) ctx.action = action;
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) {
-      console.error("resume-ai: GEMINI_API_KEY not configured");
-      return new Response(JSON.stringify({ error: "Service unavailable" }), {
-        status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.error(`[${ctx.requestId}] resume-ai: GEMINI_API_KEY not configured`);
+      return userErrorResponse("Service unavailable", 503, ctx, corsHeaders);
     }
 
     const resumeText = resumeData ? formatResumeForAI(resumeData) : "";
@@ -483,10 +493,9 @@ INSTRUCTIONS:
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       } catch (e) {
-        const transient = transientGeminiResponse(e, corsHeaders);
+        const transient = transientGeminiResponse(e, ctx, corsHeaders);
         if (transient) return transient;
-        console.error("Gemini error:", e instanceof Error ? e.message : e);
-        throw new Error("AI gateway error");
+        return internalErrorResponse(e, ctx, corsHeaders);
       }
 
     } else {
@@ -516,22 +525,16 @@ INSTRUCTIONS:
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     } catch (e) {
-      const transient = transientGeminiResponse(e, corsHeaders);
+      const transient = transientGeminiResponse(e, ctx, corsHeaders);
       if (transient) return transient;
-      console.error("Gemini error:", e instanceof Error ? e.message : e);
-      throw new Error("AI gateway error");
+      return internalErrorResponse(e, ctx, corsHeaders);
     }
 
   } catch (e) {
     if (e instanceof UserError) {
-      return new Response(JSON.stringify({ error: e.message }), {
-        status: e.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return userErrorResponse(e.message, e.status, ctx, corsHeaders);
     }
-    console.error("resume-ai error:", e instanceof Error ? e.message : e);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return internalErrorResponse(e, ctx, corsHeaders);
   }
 });
 

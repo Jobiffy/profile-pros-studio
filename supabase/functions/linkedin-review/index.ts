@@ -1,5 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { callGemini, transientGeminiResponse } from "../_shared/gemini.ts";
+import {
+  callGemini,
+  transientGeminiResponse,
+  internalErrorResponse,
+  userErrorResponse,
+  type ErrorContext,
+} from "../_shared/gemini.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,31 +18,32 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const ctx: ErrorContext = {
+    requestId: req.headers.get("sb-request-id") ?? crypto.randomUUID(),
+    fn: "linkedin-review",
+  };
+
   let body: { linkedinUrl?: string; profileText?: string };
   try {
     body = await req.json();
   } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
-      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return userErrorResponse("Invalid JSON body", 400, ctx, corsHeaders);
   }
 
   try {
     const { linkedinUrl, profileText } = body;
 
     if (!profileText || profileText.trim().length < 50) {
-      return new Response(
-        JSON.stringify({ error: "Please paste your LinkedIn profile content (at least 50 characters)." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      return userErrorResponse(
+        "Please paste your LinkedIn profile content (at least 50 characters).",
+        400, ctx, corsHeaders,
       );
     }
 
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: "GEMINI_API_KEY is not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      console.error(`[${ctx.requestId}] linkedin-review: GEMINI_API_KEY not configured`);
+      return userErrorResponse("Service unavailable", 503, ctx, corsHeaders);
     }
 
     const systemPrompt = `You are Jobiffy, an expert LinkedIn profile reviewer and career coach. 
@@ -97,27 +104,23 @@ Evaluate every section thoroughly. For each section, identify specific issues an
         forcedTool: "linkedin_review",
       }));
     } catch (e) {
-      const transient = transientGeminiResponse(e, corsHeaders);
+      const transient = transientGeminiResponse(e, ctx, corsHeaders);
       if (transient) return transient;
-      console.error("Gemini error:", e instanceof Error ? e.message : e);
-      return new Response(JSON.stringify({ error: "AI analysis failed. Please try again." }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return internalErrorResponse(e, ctx, corsHeaders);
     }
 
     const toolCall = toolCalls[0];
     if (!toolCall) {
-      return new Response(JSON.stringify({ error: "AI did not return structured analysis. Please try again." }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return userErrorResponse(
+        "AI did not return structured analysis. Please try again.",
+        502, ctx, corsHeaders,
+      );
     }
 
     return new Response(JSON.stringify(toolCall.args), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("linkedin-review error:", e instanceof Error ? e.message : e);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return internalErrorResponse(e, ctx, corsHeaders);
   }
 });
