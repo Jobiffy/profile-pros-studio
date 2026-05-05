@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-# One-time setup for the EC2 instance hosting dev.jobiffy.co.
+# One-time setup for the EC2 instance hosting ai.jobiffy.co.
 # Run as the default 'ubuntu' user with sudo. Re-runnable.
 #
 #   curl -sSL <raw-url>/deploy/ec2-bootstrap.sh | bash
 #   # or: scp this file to the instance and run `bash ec2-bootstrap.sh`
 #
 # After this finishes:
-#   1. Copy deploy/nginx.conf to /etc/nginx/sites-available/dev.jobiffy.co
-#   2. ln -s /etc/nginx/sites-available/dev.jobiffy.co /etc/nginx/sites-enabled/
+#   1. Copy deploy/nginx.conf to /etc/nginx/sites-available/ai.jobiffy.co
+#   2. ln -s /etc/nginx/sites-available/ai.jobiffy.co /etc/nginx/sites-enabled/
 #   3. nginx -t && systemctl reload nginx
-#   4. (optional) certbot --nginx -d dev.jobiffy.co
-#   5. Point dev.jobiffy.co A record at this instance's public IP
+#   4. (optional) certbot --nginx -d ai.jobiffy.co
+#   5. Point ai.jobiffy.co A record at this instance's public IP
 #   6. Add SSH deploy key to /home/deploy/.ssh/authorized_keys
 #   7. Add EC2_HOST / EC2_USER / EC2_SSH_KEY secrets to the GitHub repo
 
@@ -58,8 +58,8 @@ echo
 echo "==> Bootstrap complete."
 echo
 echo "Next steps (manual):"
-echo "  sudo cp deploy/nginx.conf /etc/nginx/sites-available/dev.jobiffy.co"
-echo "  sudo ln -sf /etc/nginx/sites-available/dev.jobiffy.co /etc/nginx/sites-enabled/dev.jobiffy.co"
+echo "  sudo cp deploy/nginx.conf /etc/nginx/sites-available/ai.jobiffy.co"
+echo "  sudo ln -sf /etc/nginx/sites-available/ai.jobiffy.co /etc/nginx/sites-enabled/ai.jobiffy.co"
 echo "  sudo rm -f /etc/nginx/sites-enabled/default"
 echo "  sudo nginx -t && sudo systemctl reload nginx"
 echo

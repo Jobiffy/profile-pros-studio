@@ -1,13 +1,13 @@
 # Deploy runbook
 
 The app is built on GitHub Actions and rsync'd as static files to an EC2
-instance. nginx serves it at `https://dev.jobiffy.co/ai-resume-builder/`.
+instance. nginx serves it at `https://ai.jobiffy.co/ai-resume-builder/`.
 
 ## What's in this directory
 
 | File | Purpose |
 |---|---|
-| `nginx.conf` | Server block for `dev.jobiffy.co` — copy to `/etc/nginx/sites-available/`. |
+| `nginx.conf` | Server block for `ai.jobiffy.co` — copy to `/etc/nginx/sites-available/`. |
 | `ec2-bootstrap.sh` | One-time setup for a fresh Ubuntu EC2: installs nginx, creates `deploy` user, opens UFW. |
 | `README.md` | This file. |
 
@@ -40,9 +40,9 @@ That installs nginx + certbot, creates the `deploy` user, prepares
 Still on the instance:
 
 ```bash
-sudo cp deploy/nginx.conf /etc/nginx/sites-available/dev.jobiffy.co
-sudo ln -sf /etc/nginx/sites-available/dev.jobiffy.co \
-            /etc/nginx/sites-enabled/dev.jobiffy.co
+sudo cp deploy/nginx.conf /etc/nginx/sites-available/ai.jobiffy.co
+sudo ln -sf /etc/nginx/sites-available/ai.jobiffy.co \
+            /etc/nginx/sites-enabled/ai.jobiffy.co
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t && sudo systemctl reload nginx
 ```
@@ -61,17 +61,17 @@ UFW on the instance is now also restricting these — both layers must allow.
 
 ### 4. DNS
 
-In your domain registrar (or wherever `jobiffy.co` is hosted):
+In your domain registrar (GoDaddy, per the existing records on `jobiffy.co`):
 
-```
-Type   Name   Value
-A      dev    3.6.89.151
+```text
+Type   Name   Value           TTL
+A      ai     3.6.89.151      1 Hour
 ```
 
-TTL 300 is fine for a dev subdomain. Wait ~1 minute, then:
+Wait ~1 minute for propagation, then:
 
 ```bash
-dig dev.jobiffy.co +short
+dig ai.jobiffy.co +short
 # expect: 3.6.89.151
 ```
 
@@ -80,7 +80,7 @@ dig dev.jobiffy.co +short
 After DNS resolves to the instance:
 
 ```bash
-sudo certbot --nginx -d dev.jobiffy.co
+sudo certbot --nginx -d ai.jobiffy.co
 ```
 
 certbot rewrites the nginx config in place to add the 443 server block and a
@@ -119,7 +119,7 @@ secret. Add three:
 
 | Name | Value |
 |---|---|
-| `EC2_HOST` | `3.6.89.151` (or `dev.jobiffy.co` once DNS is live) |
+| `EC2_HOST` | `3.6.89.151` (or `ai.jobiffy.co` once DNS is live) |
 | `EC2_USER` | `deploy` |
 | `EC2_SSH_KEY` | the **entire** contents of `~/.ssh/jobiffy_deploy` (the private file, including the BEGIN/END lines). |
 
@@ -127,7 +127,7 @@ secret. Add three:
 
 The Google OAuth and magic-link flows redirect back to
 `window.location.origin + import.meta.env.BASE_URL`. In production that's
-`https://dev.jobiffy.co/ai-resume-builder/`. Add it to:
+`https://ai.jobiffy.co/ai-resume-builder/`. Add it to:
 
 > Supabase Dashboard → Authentication → URL Configuration → Redirect URLs
 
@@ -141,7 +141,7 @@ git push origin main
 
 or run the workflow manually from the Actions tab (it's gated on
 `workflow_dispatch`). Watch the run; it should finish in ~90 seconds.
-After it succeeds, hit `https://dev.jobiffy.co/ai-resume-builder/` in a
+After it succeeds, hit `https://ai.jobiffy.co/ai-resume-builder/` in a
 browser. You should see the Landing page.
 
 ## Day 2: regular deploys
@@ -169,11 +169,11 @@ repo only `listen`s on 80 and serves static files, no upstream. Re-paste it.
 
 **OAuth lands on `/auth/callback` and 404s.**
 Supabase's allowed redirect URL list doesn't include
-`https://dev.jobiffy.co/ai-resume-builder/`. Step 8.
+`https://ai.jobiffy.co/ai-resume-builder/`. Step 8.
 
 **SPA route refresh (e.g. /ai-resume-builder/builder) gives 404.**
 The `try_files` fallback isn't in nginx. Re-check that
-`/etc/nginx/sites-enabled/dev.jobiffy.co` matches `deploy/nginx.conf` and
+`/etc/nginx/sites-enabled/ai.jobiffy.co` matches `deploy/nginx.conf` and
 nginx has been reloaded.
 
 **Certbot fails with "DNS problem".**
