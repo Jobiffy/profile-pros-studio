@@ -507,7 +507,7 @@ export interface TemplateExtraProps {
   sectionOrder?: SectionOrder[];
   changedFields?: Map<string, string>;
   showChanges?: boolean;
-  onInlineEdit?: (field: string, value: any) => void;
+  onInlineEdit?: (field: string, value: unknown) => void;
 }
 
 export function createTemplate(config: TemplateStyleConfig): React.FC<{ data: ResumeData } & TemplateExtraProps> {

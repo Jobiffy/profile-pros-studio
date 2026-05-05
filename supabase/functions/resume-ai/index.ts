@@ -278,8 +278,9 @@ serve(async (req) => {
     let systemPrompt = "";
     let userPrompt = "";
     let useTools = false;
-    let tools: any[] = [];
-    let toolChoice: any = undefined;
+    type Tool = { type: "function"; function: { name: string; description?: string; parameters: Record<string, unknown> } };
+    let tools: Tool[] = [];
+    let toolChoice: { type: "function"; function: { name: string } } | undefined = undefined;
 
     if (action === "fetch-jd") {
       if (!url) throw new UserError("URL is required");
@@ -540,55 +541,67 @@ INSTRUCTIONS:
   }
 });
 
-function formatResumeForAI(data: any): string {
-  if (!data) return "No resume data provided";
+interface ResumeShape {
+  header?: { name?: string; title?: string; email?: string; phone?: string; location?: string; linkedin?: string };
+  summary?: string;
+  experience?: Array<{ title?: string; company?: string; startDate?: string; endDate?: string; bullets?: string[] }>;
+  education?: Array<{ degree?: string; school?: string; startDate?: string; endDate?: string; gpa?: string }>;
+  skills?: Array<{ category?: string; items?: string[] }>;
+  projects?: Array<{ name?: string; description?: string; bullets?: string[] }>;
+  certifications?: string[];
+  leadership?: Array<{ role?: string; org?: string; date?: string; bullets?: string[] }>;
+}
+
+function formatResumeForAI(data: unknown): string {
+  if (!data || typeof data !== "object") return "No resume data provided";
+  const r = data as ResumeShape;
   const lines: string[] = [];
-  const h = data.header || {};
+  const h = r.header || {};
   lines.push(`Name: ${h.name || ""}`);
   lines.push(`Title: ${h.title || ""}`);
   lines.push(`Email: ${h.email || ""} | Phone: ${h.phone || ""}`);
   if (h.location) lines.push(`Location: ${h.location}`);
   if (h.linkedin) lines.push(`LinkedIn: ${h.linkedin}`);
   lines.push("");
-  if (data.summary) lines.push(`SUMMARY\n${data.summary}\n`);
-  if (data.experience?.length) {
+  if (r.summary) lines.push(`SUMMARY\n${r.summary}\n`);
+  if (r.experience?.length) {
     lines.push("EXPERIENCE");
-    for (const [i, exp] of data.experience.entries()) {
+    r.experience.forEach((exp, i) => {
       lines.push(`[${i}] ${exp.title} at ${exp.company} (${exp.startDate}–${exp.endDate})`);
-      for (const [j, b] of (exp.bullets || []).entries()) lines.push(`  [${j}] • ${b}`);
-    }
+      (exp.bullets || []).forEach((b, j) => lines.push(`  [${j}] • ${b}`));
+    });
     lines.push("");
   }
-  if (data.education?.length) {
+  if (r.education?.length) {
     lines.push("EDUCATION");
-    for (const [i, edu] of data.education.entries()) {
+    r.education.forEach((edu, i) => {
       lines.push(`[${i}] ${edu.degree} – ${edu.school} (${edu.startDate}–${edu.endDate})${edu.gpa ? ` GPA: ${edu.gpa}` : ""}`);
-    }
+    });
     lines.push("");
   }
-  if (data.skills?.length) {
+  if (r.skills?.length) {
     lines.push("SKILLS");
-    for (const [i, s] of data.skills.entries()) lines.push(`[${i}] ${s.category}: ${s.items.join(", ")}`);
+    r.skills.forEach((s, i) => lines.push(`[${i}] ${s.category}: ${(s.items || []).join(", ")}`));
     lines.push("");
   }
-  if (data.projects?.length) {
+  if (r.projects?.length) {
     lines.push("PROJECTS");
-    for (const [i, p] of data.projects.entries()) {
+    r.projects.forEach((p, i) => {
       lines.push(`[${i}] ${p.name} – ${p.description}`);
-      for (const [j, b] of (p.bullets || []).entries()) lines.push(`  [${j}] • ${b}`);
-    }
+      (p.bullets || []).forEach((b, j) => lines.push(`  [${j}] • ${b}`));
+    });
     lines.push("");
   }
-  if (data.certifications?.length) {
+  if (r.certifications?.length) {
     lines.push("CERTIFICATIONS");
-    for (const [i, c] of data.certifications.entries()) lines.push(`[${i}] • ${c}`);
+    r.certifications.forEach((c, i) => lines.push(`[${i}] • ${c}`));
   }
-  if (data.leadership?.length) {
+  if (r.leadership?.length) {
     lines.push("LEADERSHIP");
-    for (const [i, l] of data.leadership.entries()) {
+    r.leadership.forEach((l, i) => {
       lines.push(`[${i}] ${l.role} at ${l.org} (${l.date})`);
-      for (const [j, b] of (l.bullets || []).entries()) lines.push(`  [${j}] • ${b}`);
-    }
+      (l.bullets || []).forEach((b, j) => lines.push(`  [${j}] • ${b}`));
+    });
   }
   return lines.join("\n");
 }
