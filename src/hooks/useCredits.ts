@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -23,6 +23,7 @@ export function useCredits() {
   const [balance, setBalance] = useState<number | null>(null);
   const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const inFlight = useRef(false);
 
   const fetchBalance = useCallback(async () => {
     if (!user) return;
@@ -31,18 +32,7 @@ export function useCredits() {
       .select("balance")
       .eq("user_id", user.id)
       .maybeSingle();
-    
-    if (data) {
-      setBalance(data.balance);
-    } else {
-      // Initialize credits for existing users
-      await supabase.from("user_credits").insert({ user_id: user.id, balance: 50 });
-      await supabase.from("credit_transactions").insert({
-        user_id: user.id, amount: 50, type: "bonus",
-        description: "Welcome bonus credits", feature: "signup_bonus",
-      });
-      setBalance(50);
-    }
+    if (data) setBalance(data.balance);
     setLoading(false);
   }, [user]);
 
@@ -62,59 +52,70 @@ export function useCredits() {
     fetchTransactions();
   }, [fetchBalance, fetchTransactions]);
 
-  const deductCredits = useCallback(async (feature: keyof typeof CREDIT_COSTS, description: string): Promise<boolean> => {
-    if (!user || balance === null) return false;
-    const cost = CREDIT_COSTS[feature];
-    if (balance < cost) {
-      toast({
-        title: "Insufficient Credits",
-        description: `You need ${cost} credits for this action. Current balance: ${balance}. Please top up!`,
-        variant: "destructive",
-      });
-      return false;
-    }
+  const deductCredits = useCallback(
+    async (feature: keyof typeof CREDIT_COSTS, description: string): Promise<boolean> => {
+      if (!user) return false;
+      if (inFlight.current) return false;
+      const cost = CREDIT_COSTS[feature];
 
-    const newBalance = balance - cost;
-    const { error } = await supabase
-      .from("user_credits")
-      .update({ balance: newBalance })
-      .eq("user_id", user.id);
+      inFlight.current = true;
+      try {
+        const { data, error } = await supabase.rpc("deduct_credits", {
+          p_amount: cost,
+          p_feature: feature,
+          p_description: description,
+        });
 
-    if (error) {
-      toast({ title: "Error", description: "Failed to deduct credits", variant: "destructive" });
-      return false;
-    }
+        if (error) {
+          if (error.message?.includes("insufficient_credits")) {
+            toast({
+              title: "Insufficient Credits",
+              description: `You need ${cost} credits for this action. Please top up.`,
+              variant: "destructive",
+            });
+          } else {
+            toast({ title: "Error", description: "Failed to deduct credits.", variant: "destructive" });
+          }
+          return false;
+        }
 
-    await supabase.from("credit_transactions").insert({
-      user_id: user.id, amount: -cost, type: "deduction",
-      description, feature,
-    });
+        setBalance(data ?? null);
+        fetchTransactions();
+        return true;
+      } finally {
+        inFlight.current = false;
+      }
+    },
+    [user, fetchTransactions]
+  );
 
-    setBalance(newBalance);
-    fetchTransactions();
-    return true;
-  }, [user, balance, fetchTransactions]);
+  const addCredits = useCallback(
+    async (amount: number, description: string): Promise<boolean> => {
+      if (!user) return false;
+      if (inFlight.current) return false;
 
-  const addCredits = useCallback(async (amount: number, description: string) => {
-    if (!user || balance === null) return false;
-    const newBalance = balance + amount;
-    const { error } = await supabase
-      .from("user_credits")
-      .update({ balance: newBalance })
-      .eq("user_id", user.id);
+      inFlight.current = true;
+      try {
+        const { data, error } = await supabase.rpc("add_credits", {
+          p_amount: amount,
+          p_description: description,
+        });
 
-    if (error) return false;
+        if (error) {
+          toast({ title: "Top-up failed", description: error.message, variant: "destructive" });
+          return false;
+        }
 
-    await supabase.from("credit_transactions").insert({
-      user_id: user.id, amount, type: "topup",
-      description, feature: "topup",
-    });
-
-    setBalance(newBalance);
-    fetchTransactions();
-    toast({ title: "Credits Added!", description: `+${amount} credits added to your account.` });
-    return true;
-  }, [user, balance, fetchTransactions]);
+        setBalance(data ?? null);
+        fetchTransactions();
+        toast({ title: "Credits added", description: `+${amount} credits` });
+        return true;
+      } finally {
+        inFlight.current = false;
+      }
+    },
+    [user, fetchTransactions]
+  );
 
   return {
     balance,

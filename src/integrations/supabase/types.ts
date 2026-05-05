@@ -73,7 +73,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      deduct_credits: {
+        Args: { p_amount: number; p_feature: string; p_description: string }
+        Returns: number
+      }
+      add_credits: {
+        Args: { p_amount: number; p_description: string; p_feature?: string }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never

@@ -1,15 +1,16 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/hooks/useCredits";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
-  Coins, LogOut, FileText, User, Mail, Phone, Edit2, Check, X, ArrowRight,
+  Coins, LogOut, FileText, User, Mail, Phone, Edit2, Check, X, ArrowRight, Loader2,
 } from "lucide-react";
 
 export const ProfileDropdown: React.FC = () => {
@@ -18,12 +19,22 @@ export const ProfileDropdown: React.FC = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const balance = credits.balance;
   const loading = credits.loading;
-  const [displayName, setDisplayName] = useState(
-    user?.user_metadata?.full_name || user?.user_metadata?.name || ""
-  );
-  const [phone, setPhone] = useState(user?.user_metadata?.phone || "");
+  const [displayName, setDisplayName] = useState("");
+  const [phone, setPhone] = useState("");
+
+  // Re-sync local state whenever the authenticated user changes (login,
+  // logout, profile update). Without this the form keeps the previous
+  // user's values when accounts switch in the same session.
+  useEffect(() => {
+    setDisplayName(
+      user?.user_metadata?.full_name || user?.user_metadata?.name || ""
+    );
+    setPhone(user?.user_metadata?.phone || "");
+    setEditing(false);
+  }, [user?.id]);
 
   if (!user) return null;
 
@@ -42,8 +53,33 @@ export const ProfileDropdown: React.FC = () => {
 
   const handleSignOut = async () => {
     setOpen(false);
-    await signOut();
+    try {
+      await signOut();
+    } catch (e) {
+      toast({ title: "Sign out failed", description: e instanceof Error ? e.message : "Please try again.", variant: "destructive" });
+      return;
+    }
     navigate("/");
+  };
+
+  const handleSaveProfile = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          full_name: displayName.trim() || null,
+          phone: phone.trim() || null,
+        },
+      });
+      if (error) throw error;
+      toast({ title: "Profile updated" });
+      setEditing(false);
+    } catch (e) {
+      toast({ title: "Save failed", description: e instanceof Error ? e.message : "Please try again.", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -101,11 +137,21 @@ export const ProfileDropdown: React.FC = () => {
                         className="h-8 text-sm"
                       />
                       <div className="flex gap-1.5">
-                        <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => setEditing(false)}>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2"
+                          onClick={() => {
+                            setDisplayName(user.user_metadata?.full_name || user.user_metadata?.name || "");
+                            setPhone(user.user_metadata?.phone || "");
+                            setEditing(false);
+                          }}
+                          disabled={saving}
+                        >
                           <X size={14} />
                         </Button>
-                        <Button size="sm" className="h-7 px-3 text-xs" onClick={() => setEditing(false)}>
-                          <Check size={14} className="mr-1" /> Save
+                        <Button size="sm" className="h-7 px-3 text-xs" onClick={handleSaveProfile} disabled={saving}>
+                          {saving ? <Loader2 size={14} className="animate-spin" /> : <><Check size={14} className="mr-1" /> Save</>}
                         </Button>
                       </div>
                     </div>

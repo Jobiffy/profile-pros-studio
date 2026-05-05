@@ -38,9 +38,6 @@ const Profile = () => {
     setTopUpLoading(amount);
     try {
       await addCredits(amount, `Top-up: +${amount} credits`);
-      toast({ title: "Credits added", description: `+${amount} credits` });
-    } catch (e) {
-      toast({ title: "Top-up failed", description: e instanceof Error ? e.message : "Please try again.", variant: "destructive" });
     } finally {
       setTopUpLoading(null);
     }
