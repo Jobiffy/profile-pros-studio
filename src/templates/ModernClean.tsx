@@ -51,7 +51,9 @@ export const ModernClean = ({ data, sectionOrder, changedFields, showChanges }: 
         {data.projects.map((p, i) => (
           <div key={i} className="mb-3">
             <p className="font-semibold">{p.name}{p.tech && <span className="font-normal text-[10px]" style={{ color: '#999' }}> · {p.tech}</span>}</p>
-            {p.bullets.map((b, j) => <li key={j} className="pl-3" style={{ borderLeft: `1px solid var(--resume-accent-light, #e0e0e0)` }}>{b}</li>)}
+            <ul className="mt-1 space-y-1">
+              {p.bullets.map((b, j) => <li key={j} className="pl-3" style={{ borderLeft: `1px solid var(--resume-accent-light, #e0e0e0)` }}>{b}</li>)}
+            </ul>
           </div>
         ))}
       </MSection>
@@ -66,7 +68,9 @@ export const ModernClean = ({ data, sectionOrder, changedFields, showChanges }: 
         {data.leadership.map((l, i) => (
           <div key={i} className="mb-3">
             <p className="font-semibold">{l.role} – {l.org}</p>
-            {l.bullets.map((b, j) => <li key={j} className="pl-3" style={{ borderLeft: `1px solid var(--resume-accent-light, #e0e0e0)` }}>{b}</li>)}
+            <ul className="mt-1 space-y-1">
+              {l.bullets.map((b, j) => <li key={j} className="pl-3" style={{ borderLeft: `1px solid var(--resume-accent-light, #e0e0e0)` }}>{b}</li>)}
+            </ul>
           </div>
         ))}
       </MSection>
@@ -80,7 +84,11 @@ export const ModernClean = ({ data, sectionOrder, changedFields, showChanges }: 
           <div key={j} className="mb-3">
             {item.subtitle && <p className="font-semibold">{item.subtitle}</p>}
             {item.description && <p className="text-[10px]" style={{ color: '#999' }}>{item.description}</p>}
-            {item.bullets?.map((b, k) => <li key={k} className="pl-3" style={{ borderLeft: `1px solid var(--resume-accent-light, #e0e0e0)` }}>{b}</li>)}
+            {Boolean(item.bullets?.length) && (
+              <ul className="mt-1 space-y-1">
+                {item.bullets!.map((b, k) => <li key={k} className="pl-3" style={{ borderLeft: `1px solid var(--resume-accent-light, #e0e0e0)` }}>{b}</li>)}
+              </ul>
+            )}
           </div>
         ))}
       </MSection>

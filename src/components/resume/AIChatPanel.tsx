@@ -7,6 +7,20 @@ import { Send, Loader2, Bot, User, Sparkles, Zap, Mic, MicOff, CheckCircle2, Arr
 import ReactMarkdown from "react-markdown";
 import rehypeSanitize from "rehype-sanitize";
 
+interface SpeechRecognitionResultEvent {
+  results: ArrayLike<{ 0: { transcript: string } }>;
+}
+interface SpeechRecognitionLike {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: SpeechRecognitionResultEvent) => void) | null;
+  onend: (() => void) | null;
+  onerror: (() => void) | null;
+  start(): void;
+  stop(): void;
+}
+
 interface Props {
   messages: ChatMessage[];
   loading: boolean;
@@ -30,7 +44,7 @@ export function AIChatPanel({ messages, loading, onSend, resumeName }: Props) {
   const [isListening, setIsListening] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -57,13 +71,22 @@ export function AIChatPanel({ messages, loading, onSend, resumeName }: Props) {
       setIsListening(false);
       return;
     }
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    // Tear down any prior instance before starting a new one so we don't
+    // leak event handlers from a previous start/stop cycle.
+    recognitionRef.current?.stop();
+    recognitionRef.current = null;
+
+    const SpeechRecognition = (window as unknown as { SpeechRecognition?: new () => SpeechRecognitionLike; webkitSpeechRecognition?: new () => SpeechRecognitionLike }).SpeechRecognition
+      || (window as unknown as { webkitSpeechRecognition?: new () => SpeechRecognitionLike }).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
     const recognition = new SpeechRecognition();
     recognition.continuous = false;
     recognition.interimResults = true;
     recognition.lang = "en-US";
-    recognition.onresult = (event: any) => {
-      const transcript = Array.from(event.results).map((result: any) => result[0].transcript).join("");
+    recognition.onresult = (event: SpeechRecognitionResultEvent) => {
+      const results = event.results as ArrayLike<{ 0: { transcript: string } }>;
+      const transcript = Array.from(results).map((result) => result[0].transcript).join("");
       setInput(transcript);
     };
     recognition.onend = () => setIsListening(false);
@@ -72,6 +95,10 @@ export function AIChatPanel({ messages, loading, onSend, resumeName }: Props) {
     recognition.start();
     setIsListening(true);
   };
+
+  useEffect(() => {
+    return () => { recognitionRef.current?.stop(); };
+  }, []);
 
   const hasSpeech = typeof window !== "undefined" && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window);
 

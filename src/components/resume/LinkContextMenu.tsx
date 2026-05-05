@@ -73,8 +73,11 @@ export function LinkContextMenu({ containerRef }: LinkContextMenuProps) {
 
   const handleRemove = () => {
     if (targetAnchor) {
-      const text = document.createTextNode(targetAnchor.textContent || "");
-      targetAnchor.parentNode?.replaceChild(text, targetAnchor);
+      const parent = targetAnchor.parentNode;
+      if (parent) {
+        const text = document.createTextNode(targetAnchor.textContent || "");
+        parent.replaceChild(text, targetAnchor);
+      }
     }
     setVisible(false);
   };

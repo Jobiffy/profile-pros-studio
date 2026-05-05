@@ -363,7 +363,7 @@ export function ResumeEditPanel(props: Props) {
                   label="Subtitle"
                   value={item.subtitle || ""}
                   onChange={v => {
-                    const customs = JSON.parse(JSON.stringify(data.customSections || []));
+                    const customs = structuredClone(data.customSections || []);
                     customs[si].items[ii].subtitle = v;
                     onUpdateField("customSections", customs);
                   }}
@@ -373,7 +373,7 @@ export function ResumeEditPanel(props: Props) {
                   <Textarea
                     value={item.description || ""}
                     onChange={e => {
-                      const customs = JSON.parse(JSON.stringify(data.customSections || []));
+                      const customs = structuredClone(data.customSections || []);
                       customs[si].items[ii].description = e.target.value;
                       onUpdateField("customSections", customs);
                     }}
@@ -390,7 +390,7 @@ export function ResumeEditPanel(props: Props) {
                       <Textarea
                         value={b}
                         onChange={e => {
-                          const customs = JSON.parse(JSON.stringify(data.customSections || []));
+                          const customs = structuredClone(data.customSections || []);
                           const bullets = [...(customs[si].items[ii].bullets || [])];
                           bullets[bi] = e.target.value;
                           customs[si].items[ii].bullets = bullets;
@@ -401,7 +401,7 @@ export function ResumeEditPanel(props: Props) {
                       />
                       <button
                         onClick={() => {
-                          const customs = JSON.parse(JSON.stringify(data.customSections || []));
+                          const customs = structuredClone(data.customSections || []);
                           customs[si].items[ii].bullets.splice(bi, 1);
                           onUpdateField("customSections", customs);
                         }}
@@ -413,7 +413,7 @@ export function ResumeEditPanel(props: Props) {
                   ))}
                   <button
                     onClick={() => {
-                      const customs = JSON.parse(JSON.stringify(data.customSections || []));
+                      const customs = structuredClone(data.customSections || []);
                       if (!customs[si].items[ii].bullets) customs[si].items[ii].bullets = [];
                       customs[si].items[ii].bullets.push("");
                       onUpdateField("customSections", customs);

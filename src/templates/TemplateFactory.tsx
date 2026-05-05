@@ -209,9 +209,9 @@ function SingleColumnLayout({ data, config }: { data: ResumeData; config: Templa
       {data.education.map((edu, i) => <EduBlock key={i} edu={edu} />)}
       <STitle title="Skills" style={config.sectionStyle} color={c} />
       <SkillsBlock skills={data.skills} layout="grid" />
-      {data.projects?.length! > 0 && <><STitle title="Projects" style={config.sectionStyle} color={c} /><ProjectsBlock projects={data.projects} config={config} /></>}
-      {data.certifications?.length! > 0 && <><STitle title="Certifications" style={config.sectionStyle} color={c} /><CertsBlock certs={data.certifications} /></>}
-      {data.leadership?.length! > 0 && <><STitle title="Leadership" style={config.sectionStyle} color={c} /><LeadershipBlock items={data.leadership} config={config} /></>}
+      {Boolean(data.projects?.length) && <><STitle title="Projects" style={config.sectionStyle} color={c} /><ProjectsBlock projects={data.projects} config={config} /></>}
+      {Boolean(data.certifications?.length) && <><STitle title="Certifications" style={config.sectionStyle} color={c} /><CertsBlock certs={data.certifications} /></>}
+      {Boolean(data.leadership?.length) && <><STitle title="Leadership" style={config.sectionStyle} color={c} /><LeadershipBlock items={data.leadership} config={config} /></>}
       <CustomSectionsBlock sections={data.customSections} config={config} />
     </div>
   );
@@ -247,7 +247,7 @@ function SidebarLayout({ data, config }: { data: ResumeData; config: TemplateSty
             </div>
           ))}
         </div>
-        {data.certifications?.length! > 0 && (
+        {Boolean(data.certifications?.length) && (
           <div>
             <p className="text-[9px] font-bold uppercase tracking-[0.2em] opacity-60 mb-1">Certifications</p>
             {data.certifications!.map((c, i) => <p key={i} className="text-[9.5px] opacity-90">• {c}</p>)}
@@ -274,8 +274,8 @@ function SidebarLayout({ data, config }: { data: ResumeData; config: TemplateSty
       {data.summary && <><STitle title="Profile" style={config.sectionStyle} color={c} /><p className="text-[10.5px] text-gray-700 leading-[1.6]">{data.summary}</p></>}
       <STitle title="Experience" style={config.sectionStyle} color={c} />
       {data.experience.map((exp, i) => <ExpBlock key={i} exp={exp} config={config} />)}
-      {data.projects?.length! > 0 && <><STitle title="Projects" style={config.sectionStyle} color={c} /><ProjectsBlock projects={data.projects} config={config} /></>}
-      {data.leadership?.length! > 0 && <><STitle title="Leadership" style={config.sectionStyle} color={c} /><LeadershipBlock items={data.leadership} config={config} /></>}
+      {Boolean(data.projects?.length) && <><STitle title="Projects" style={config.sectionStyle} color={c} /><ProjectsBlock projects={data.projects} config={config} /></>}
+      {Boolean(data.leadership?.length) && <><STitle title="Leadership" style={config.sectionStyle} color={c} /><LeadershipBlock items={data.leadership} config={config} /></>}
       <CustomSectionsBlock sections={data.customSections} config={config} />
     </div>
   );
@@ -309,9 +309,9 @@ function BannerLayout({ data, config }: { data: ResumeData; config: TemplateStyl
         {data.education.map((edu, i) => <EduBlock key={i} edu={edu} />)}
         <STitle title="Skills" style={config.sectionStyle} color={c} />
         <SkillsBlock skills={data.skills} layout="inline" />
-        {data.projects?.length! > 0 && <><STitle title="Projects" style={config.sectionStyle} color={c} /><ProjectsBlock projects={data.projects} config={config} /></>}
-        {data.certifications?.length! > 0 && <><STitle title="Certifications" style={config.sectionStyle} color={c} /><CertsBlock certs={data.certifications} /></>}
-        {data.leadership?.length! > 0 && <><STitle title="Leadership" style={config.sectionStyle} color={c} /><LeadershipBlock items={data.leadership} config={config} /></>}
+        {Boolean(data.projects?.length) && <><STitle title="Projects" style={config.sectionStyle} color={c} /><ProjectsBlock projects={data.projects} config={config} /></>}
+        {Boolean(data.certifications?.length) && <><STitle title="Certifications" style={config.sectionStyle} color={c} /><CertsBlock certs={data.certifications} /></>}
+        {Boolean(data.leadership?.length) && <><STitle title="Leadership" style={config.sectionStyle} color={c} /><LeadershipBlock items={data.leadership} config={config} /></>}
         <CustomSectionsBlock sections={data.customSections} config={config} />
       </div>
     </div>
@@ -340,9 +340,9 @@ function MinimalLayout({ data, config }: { data: ResumeData; config: TemplateSty
       {data.education.map((edu, i) => <EduBlock key={i} edu={edu} />)}
       <STitle title="Skills" style="minimal" color={c} />
       <SkillsBlock skills={data.skills} layout="inline" />
-      {data.projects?.length! > 0 && <><STitle title="Projects" style="minimal" color={c} /><ProjectsBlock projects={data.projects} config={config} /></>}
-      {data.certifications?.length! > 0 && <><STitle title="Certifications" style="minimal" color={c} /><CertsBlock certs={data.certifications} /></>}
-      {data.leadership?.length! > 0 && <><STitle title="Leadership" style="minimal" color={c} /><LeadershipBlock items={data.leadership} config={config} /></>}
+      {Boolean(data.projects?.length) && <><STitle title="Projects" style="minimal" color={c} /><ProjectsBlock projects={data.projects} config={config} /></>}
+      {Boolean(data.certifications?.length) && <><STitle title="Certifications" style="minimal" color={c} /><CertsBlock certs={data.certifications} /></>}
+      {Boolean(data.leadership?.length) && <><STitle title="Leadership" style="minimal" color={c} /><LeadershipBlock items={data.leadership} config={config} /></>}
       <CustomSectionsBlock sections={data.customSections} config={config} />
     </div>
   );
@@ -482,7 +482,8 @@ function renderSections(
     );
     // Custom sections
     if (key.startsWith("custom_")) {
-      const idx = parseInt(key.split("_")[1]);
+      const idx = Number(key.slice("custom_".length));
+      if (!Number.isInteger(idx) || idx < 0) return null;
       const sec = data.customSections?.[idx];
       if (!sec) return null;
       return (
