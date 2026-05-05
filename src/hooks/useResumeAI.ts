@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { ResumeData } from "@/types/resume";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -43,52 +43,63 @@ export function useResumeAI(resumeData: ResumeData) {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
 
+  // Mirror state in refs so sendChatMessage's identity stays stable. Without
+  // these the callback would be recreated on every keystroke (resumeData),
+  // every message (chatMessages), and every loading toggle, cascading
+  // unnecessary re-renders down to AIChatPanel.
+  const chatMessagesRef = useRef<ChatMessage[]>([]);
+  const chatLoadingRef = useRef(false);
+  const resumeDataRef = useRef(resumeData);
+  useEffect(() => { chatMessagesRef.current = chatMessages; }, [chatMessages]);
+  useEffect(() => { chatLoadingRef.current = chatLoading; }, [chatLoading]);
+  useEffect(() => { resumeDataRef.current = resumeData; }, [resumeData]);
+
   const analyzeATS = useCallback(async () => {
     setAtsLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("resume-ai", {
-        body: { action: "ats-score", resumeData },
+        body: { action: "ats-score", resumeData: resumeDataRef.current },
       });
       if (error) throw error;
       setAtsResult(data);
-    } catch (e: any) {
-      toast({ title: "ATS Analysis Failed", description: e.message, variant: "destructive" });
+    } catch (e) {
+      toast({ title: "ATS Analysis Failed", description: e instanceof Error ? e.message : "Unknown error", variant: "destructive" });
     } finally {
       setAtsLoading(false);
     }
-  }, [resumeData]);
+  }, []);
 
   const matchJD = useCallback(async (jobDescription: string) => {
     setJdLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("resume-ai", {
-        body: { action: "jd-match", resumeData, jobDescription },
+        body: { action: "jd-match", resumeData: resumeDataRef.current, jobDescription },
       });
       if (error) throw error;
       setJdResult(data);
-    } catch (e: any) {
-      toast({ title: "JD Match Failed", description: e.message, variant: "destructive" });
+    } catch (e) {
+      toast({ title: "JD Match Failed", description: e instanceof Error ? e.message : "Unknown error", variant: "destructive" });
     } finally {
       setJdLoading(false);
     }
-  }, [resumeData]);
+  }, []);
 
   const tailorResume = useCallback(async (jobDescription: string): Promise<ResumeData | null> => {
     setTailorLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("resume-ai", {
-        body: { action: "tailor-resume", resumeData, jobDescription },
+        body: { action: "tailor-resume", resumeData: resumeDataRef.current, jobDescription },
       });
       if (error) throw error;
       toast({ title: "Resume Tailored!", description: "Your resume has been optimized for this job. Review the changes." });
       return data as ResumeData;
-    } catch (e: any) {
-      toast({ title: "Tailoring Failed", description: e.message, variant: "destructive" });
+    } catch (e) {
+      toast({ title: "Tailoring Failed", description: e instanceof Error ? e.message : "Unknown error", variant: "destructive" });
       return null;
     } finally {
       setTailorLoading(false);
     }
-  }, [resumeData]);
+  }, []);
 
   const sendChatMessage = useCallback(async (
     userMessage: string,
@@ -102,19 +113,19 @@ export function useResumeAI(resumeData: ResumeData) {
       onSetShowChanges?: (show: boolean) => void;
     }
   ) => {
+    if (chatLoadingRef.current) return;
     const userMsg: ChatMessage = { role: "user", content: userMessage };
     setChatMessages(prev => [...prev, userMsg]);
     setChatLoading(true);
 
     try {
-      const allMessages = [...chatMessages, userMsg].map(m => ({
+      const allMessages = [...chatMessagesRef.current, userMsg].map(m => ({
         role: m.role,
         content: m.content,
       }));
 
-      // Use supabase.functions.invoke — same as ATS/JD which work fine
       const { data, error } = await supabase.functions.invoke("resume-ai", {
-        body: { action: "chat", resumeData, messages: allMessages },
+        body: { action: "chat", resumeData: resumeDataRef.current, messages: allMessages },
       });
 
       if (error) {
@@ -189,12 +200,12 @@ export function useResumeAI(resumeData: ResumeData) {
 
       setChatMessages(prev => [...prev, assistantMsg]);
 
-    } catch (e: any) {
-      toast({ title: "Chat Error", description: e.message, variant: "destructive" });
+    } catch (e) {
+      toast({ title: "Chat Error", description: e instanceof Error ? e.message : "Unknown error", variant: "destructive" });
     } finally {
       setChatLoading(false);
     }
-  }, [chatMessages, resumeData]);
+  }, []);
 
   return {
     atsResult, atsLoading, analyzeATS,

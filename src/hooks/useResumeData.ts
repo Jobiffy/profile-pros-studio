@@ -35,8 +35,7 @@ export function useResumeData() {
   const setResumeDataWithHistory = useCallback((updater: ResumeData | ((prev: ResumeData) => ResumeData)) => {
     setResumeData(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      // Push to history on next tick to batch
-      setTimeout(() => pushHistory(next), 0);
+      pushHistory(next);
       return next;
     });
   }, [pushHistory]);
@@ -75,19 +74,19 @@ export function useResumeData() {
     setChangedFields(new Map());
   }, []);
 
-  const updateField = useCallback((field: string, value: any) => {
+  const updateField = useCallback((field: string, value: unknown) => {
     setResumeDataWithHistory(prev => {
-      const next = JSON.parse(JSON.stringify(prev));
+      const next = structuredClone(prev);
       const parts = field.match(/([^[.\]]+)/g);
       if (!parts) return prev;
-      let target: any = next;
+      let target: unknown = next;
       for (let i = 0; i < parts.length - 1; i++) {
         const key = isNaN(Number(parts[i])) ? parts[i] : Number(parts[i]);
-        target = target[key];
-        if (!target) return prev;
+        target = (target as Record<string, unknown>)[key as string];
+        if (target == null) return prev;
       }
       const lastKey = isNaN(Number(parts[parts.length - 1])) ? parts[parts.length - 1] : Number(parts[parts.length - 1]);
-      target[lastKey] = value;
+      (target as Record<string, unknown>)[lastKey as string] = value;
       return next;
     });
     markChanged(field);
