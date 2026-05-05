@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { callGemini, GeminiError } from "../_shared/gemini.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,8 +12,17 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let body: { linkedinUrl?: string; profileText?: string };
   try {
-    const { linkedinUrl, profileText } = await req.json();
+    body = await req.json();
+  } catch {
+    return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
+      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  try {
+    const { linkedinUrl, profileText } = body;
 
     if (!profileText || profileText.trim().length < 50) {
       return new Response(
@@ -21,10 +31,10 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
       return new Response(
-        JSON.stringify({ error: "LOVABLE_API_KEY is not configured" }),
+        JSON.stringify({ error: "GEMINI_API_KEY is not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -41,101 +51,74 @@ ${profileText}
 
 Evaluate every section thoroughly. For each section, identify specific issues and provide concrete improvement suggestions. Then project what the scores could be after implementing your suggestions.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "linkedin_review",
-              description: "Return a comprehensive LinkedIn profile review with scores, feedback, and projected improvements.",
-              parameters: {
+    const linkedinReviewTool = {
+      type: "function" as const,
+      function: {
+        name: "linkedin_review",
+        description: "Return a comprehensive LinkedIn profile review with scores, feedback, and projected improvements.",
+        parameters: {
+          type: "object",
+          properties: {
+            overallScore: { type: "number", description: "Overall profile score out of 100" },
+            projectedOverallScore: { type: "number", description: "Projected overall score after implementing all suggestions, out of 100" },
+            summary: { type: "string", description: "A brief 2-3 sentence executive summary" },
+            profileName: { type: "string", description: "The name extracted from the LinkedIn profile" },
+            profileHeadline: { type: "string", description: "The headline extracted from the LinkedIn profile" },
+            sections: {
+              type: "array",
+              items: {
                 type: "object",
                 properties: {
-                  overallScore: { type: "number", description: "Overall profile score out of 100" },
-                  projectedOverallScore: { type: "number", description: "Projected overall score after implementing all suggestions, out of 100" },
-                  summary: { type: "string", description: "A brief 2-3 sentence executive summary" },
-                  profileName: { type: "string", description: "The name extracted from the LinkedIn profile" },
-                  profileHeadline: { type: "string", description: "The headline extracted from the LinkedIn profile" },
-                  sections: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        name: { type: "string", description: "Section name (Headline, About/Summary, Experience, Skills, Projects, Education, Profile Completeness, Keywords/ATS Relevance, Impact & Achievements)" },
-                        score: { type: "number", description: "Score out of 10" },
-                        projectedScore: { type: "number", description: "Projected score after improvements out of 10" },
-                        issues: { type: "array", items: { type: "string" } },
-                        suggestions: { type: "array", items: { type: "string" } },
-                      },
-                      required: ["name", "score", "projectedScore", "issues", "suggestions"],
-                      additionalProperties: false,
-                    },
-                  },
-                  topStrengths: { type: "array", items: { type: "string" } },
-                  criticalImprovements: { type: "array", items: { type: "string" } },
+                  name: { type: "string", description: "Section name (Headline, About/Summary, Experience, Skills, Projects, Education, Profile Completeness, Keywords/ATS Relevance, Impact & Achievements)" },
+                  score: { type: "number", description: "Score out of 10" },
+                  projectedScore: { type: "number", description: "Projected score after improvements out of 10" },
+                  issues: { type: "array", items: { type: "string" } },
+                  suggestions: { type: "array", items: { type: "string" } },
                 },
-                required: ["overallScore", "projectedOverallScore", "summary", "profileName", "profileHeadline", "sections", "topStrengths", "criticalImprovements"],
-                additionalProperties: false,
+                required: ["name", "score", "projectedScore", "issues", "suggestions"],
               },
             },
+            topStrengths: { type: "array", items: { type: "string" } },
+            criticalImprovements: { type: "array", items: { type: "string" } },
           },
-        ],
-        tool_choice: { type: "function", function: { name: "linkedin_review" } },
-      }),
-    });
+          required: ["overallScore", "projectedOverallScore", "summary", "profileName", "profileHeadline", "sections", "topStrengths", "criticalImprovements"],
+        },
+      },
+    };
 
-    if (!response.ok) {
-      if (response.status === 429) {
+    let toolCalls;
+    try {
+      ({ toolCalls } = await callGemini({
+        apiKey: GEMINI_API_KEY,
+        model: "gemini-2.5-flash",
+        system: systemPrompt,
+        messages: [{ role: "user", content: userPrompt }],
+        tools: [linkedinReviewTool],
+        forcedTool: "linkedin_review",
+      }));
+    } catch (e) {
+      if (e instanceof GeminiError && e.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted. Please add credits." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-      const text = await response.text();
-      console.error("AI gateway error:", response.status, text);
+      console.error("Gemini error:", e instanceof Error ? e.message : e);
       return new Response(JSON.stringify({ error: "AI analysis failed. Please try again." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const data = await response.json();
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-
+    const toolCall = toolCalls[0];
     if (!toolCall) {
-      console.error("No tool call in response:", JSON.stringify(data));
       return new Response(JSON.stringify({ error: "AI did not return structured analysis. Please try again." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    let result;
-    try {
-      result = typeof toolCall.function.arguments === "string"
-        ? JSON.parse(toolCall.function.arguments)
-        : toolCall.function.arguments;
-    } catch {
-      return new Response(JSON.stringify({ error: "Failed to parse AI response." }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-    return new Response(JSON.stringify(result), {
+    return new Response(JSON.stringify(toolCall.args), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("linkedin-review error:", e);
+    console.error("linkedin-review error:", e instanceof Error ? e.message : e);
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
+      JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

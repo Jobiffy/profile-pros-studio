@@ -1,7 +1,7 @@
-project_id = "vqyzrkccrnmdhbbeceqx"
+project_id = "hyorirvoionrcahoqyhq"
 
 [functions.resume-ai]
-verify_jwt = false
+verify_jwt = true
 
 [functions.linkedin-review]
-verify_jwt = false
+verify_jwt = true

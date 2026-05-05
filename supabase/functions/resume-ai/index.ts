@@ -1,10 +1,42 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { callGemini, GeminiError } from "../_shared/gemini.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+class UserError extends Error {
+  constructor(message: string, public status = 400) {
+    super(message);
+  }
+}
+
+// Block obvious SSRF targets: loopback, link-local, RFC 1918 / ULA, cloud metadata.
+// Hostname-form check (no DNS resolution); pairs with the per-request fetch timeout.
+function assertPublicHttpUrl(raw: string): URL {
+  let u: URL;
+  try { u = new URL(raw); } catch { throw new UserError("Invalid URL"); }
+  if (u.protocol !== "http:" && u.protocol !== "https:") throw new UserError("Only http(s) URLs are allowed");
+  const host = u.hostname.toLowerCase();
+  if (
+    host === "localhost" ||
+    host === "0.0.0.0" ||
+    host === "::1" ||
+    host === "::" ||
+    host === "169.254.169.254" ||
+    /^127\./.test(host) ||
+    /^10\./.test(host) ||
+    /^192\.168\./.test(host) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
+    /^169\.254\./.test(host) ||
+    /^fc[0-9a-f]{2}:/i.test(host) ||
+    /^fd[0-9a-f]{2}:/i.test(host) ||
+    /^fe80:/i.test(host)
+  ) throw new UserError("URL host not allowed");
+  return u;
+}
 
 const resumeToolSchema = {
   type: "function",
@@ -222,27 +254,43 @@ const chatTools = [
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  let body: { action?: string; resumeData?: unknown; jobDescription?: string; messages?: unknown[]; rawText?: string; url?: string };
   try {
-    const { action, resumeData, jobDescription, messages, rawText, url } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    body = await req.json();
+  } catch {
+    return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
+      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  try {
+    const { action, resumeData, jobDescription, messages, rawText, url } = body;
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      console.error("resume-ai: GEMINI_API_KEY not configured");
+      return new Response(JSON.stringify({ error: "Service unavailable" }), {
+        status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const resumeText = resumeData ? formatResumeForAI(resumeData) : "";
 
     let systemPrompt = "";
     let userPrompt = "";
-    let useStream = false;
     let useTools = false;
     let tools: any[] = [];
     let toolChoice: any = undefined;
 
     if (action === "fetch-jd") {
-      if (!url) throw new Error("URL is required");
-      const pageResp = await fetch(url, {
+      if (!url) throw new UserError("URL is required");
+      const safeUrl = assertPublicHttpUrl(url);
+      const pageResp = await fetch(safeUrl.href, {
         headers: { "User-Agent": "Mozilla/5.0 (compatible; Jobiffy/1.0)" },
+        redirect: "error",
+        signal: AbortSignal.timeout(10_000),
       });
-      if (!pageResp.ok) throw new Error(`Failed to fetch URL: ${pageResp.status}`);
-      const html = await pageResp.text();
+      if (!pageResp.ok) throw new UserError(`Failed to fetch URL: ${pageResp.status}`, 502);
+      const html = (await pageResp.text()).slice(0, 1_000_000);
       const textContent = html
         .replace(/<script[\s\S]*?<\/script>/gi, "")
         .replace(/<style[\s\S]*?<\/style>/gi, "")
@@ -251,31 +299,19 @@ serve(async (req) => {
         .trim()
         .slice(0, 15000);
 
-      const extractResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash-lite",
-          messages: [
-            { role: "system", content: "Extract the job description from the following webpage text. Return ONLY the job description text, including job title, requirements, responsibilities, and qualifications. Remove any navigation, footer, or unrelated content." },
-            { role: "user", content: textContent },
-          ],
-        }),
+      const { text: jdText } = await callGemini({
+        apiKey: GEMINI_API_KEY,
+        model: "gemini-2.5-flash-lite",
+        system: "Extract the job description from the following webpage text. Return ONLY the job description text, including job title, requirements, responsibilities, and qualifications. Remove any navigation, footer, or unrelated content.",
+        messages: [{ role: "user", content: textContent }],
       });
-
-      if (!extractResp.ok) throw new Error("Failed to extract job description");
-      const extractData = await extractResp.json();
-      const jdText = extractData.choices?.[0]?.message?.content || "";
       return new Response(JSON.stringify({ jobDescription: jdText }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     if (action === "parse-resume") {
-      if (!rawText) throw new Error("Raw text is required for parsing");
+      if (!rawText) throw new UserError("Raw text is required for parsing");
       useTools = true;
       systemPrompt = `You are an expert resume parser. Your job is to extract ALL information from the provided resume text with 100% accuracy.
 
@@ -299,7 +335,7 @@ CRITICAL RULES:
       toolChoice = { type: "function", function: { name: "parsed_resume" } };
 
     } else if (action === "tailor-resume") {
-      if (!jobDescription) throw new Error("Job description is required");
+      if (!jobDescription) throw new UserError("Job description is required");
       useTools = true;
       systemPrompt = `You are an expert resume optimizer. Given a resume and a job description, optimize the resume to maximize the match with the job. Rules:
 1. Keep the same person's real experience — do NOT fabricate roles, companies, or degrees.
@@ -348,7 +384,7 @@ CRITICAL RULES:
       toolChoice = { type: "function", function: { name: "ats_analysis" } };
 
     } else if (action === "jd-match") {
-      if (!jobDescription) throw new Error("Job description is required");
+      if (!jobDescription) throw new UserError("Job description is required");
       useTools = true;
       systemPrompt = `You are an expert resume-job description matching analyst. Compare the resume against the job description and provide a detailed match analysis.`;
       userPrompt = `Resume:\n${resumeText}\n\nJob Description:\n${jobDescription}\n\nAnalyze the match.`;
@@ -413,152 +449,92 @@ INSTRUCTIONS:
 - For field paths, use dot notation: "header.title", "experience[0].bullets", "skills[1].items", etc.
 - IMPORTANT: Always specify the change_type for update_section: 'grammar' for grammar/spelling, 'content' for rewrites/additions, 'keyword' for keyword optimization, 'formatting' for structural changes.`;
 
-      const aiMessages: any[] = [{ role: "system", content: systemPrompt }];
+      const turns: { role: "user" | "assistant"; content: string }[] = [];
       if (messages) {
-        // Convert tool_calls messages to proper format for context
         for (const m of messages) {
-          if (m.role === "assistant" && m.tool_calls) {
-            aiMessages.push({ role: "assistant", content: m.content || "", tool_calls: m.tool_calls });
-            // Add tool results
-            if (m.tool_results) {
-              for (const tr of m.tool_results) {
-                aiMessages.push({ role: "tool", tool_call_id: tr.tool_call_id, content: tr.content });
-              }
-            }
-          } else {
-            aiMessages.push({ role: m.role, content: m.content });
+          // Skip the legacy multi-turn tool_calls/tool_results path — the client
+          // doesn't send those; each turn is fresh role+content.
+          if (m.role === "user" || m.role === "assistant") {
+            turns.push({ role: m.role, content: m.content });
           }
         }
       }
 
-      const body = {
-        model: "google/gemini-2.5-flash",
-        messages: aiMessages,
-        tools: chatTools,
-      };
+      try {
+        const { text, toolCalls } = await callGemini({
+          apiKey: GEMINI_API_KEY,
+          model: "gemini-2.5-flash",
+          system: systemPrompt,
+          messages: turns,
+          tools: chatTools,
+        });
 
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-      });
+        const result = {
+          content: text || "",
+          tool_calls: toolCalls.map((tc) => ({
+            id: crypto.randomUUID(),
+            name: tc.name,
+            arguments: tc.args,
+          })),
+        };
 
-      if (!response.ok) {
-        if (response.status === 429) {
+        return new Response(JSON.stringify(result), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (e) {
+        if (e instanceof GeminiError && e.status === 429) {
           return new Response(JSON.stringify({ error: "Rate limited. Please try again shortly." }), {
             status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
-        if (response.status === 402) {
-          return new Response(JSON.stringify({ error: "AI credits exhausted. Please add credits." }), {
-            status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        const t = await response.text();
-        console.error("AI error:", response.status, t);
+        console.error("Gemini error:", e instanceof Error ? e.message : e);
         throw new Error("AI gateway error");
       }
 
-      const data = await response.json();
-      const choice = data.choices?.[0];
-      const message = choice?.message;
+    } else {
+      throw new UserError(`Unknown action: ${action}`);
+    }
 
-      // Return structured response with tool calls
-      const result: any = {
-        content: message?.content || "",
-        tool_calls: [],
-      };
+    try {
+      const { text, toolCalls } = await callGemini({
+        apiKey: GEMINI_API_KEY,
+        model: "gemini-2.5-flash",
+        system: systemPrompt,
+        messages: [{ role: "user", content: userPrompt }],
+        tools: useTools ? tools : undefined,
+        forcedTool: toolChoice?.function?.name,
+      });
 
-      if (message?.tool_calls) {
-        for (const tc of message.tool_calls) {
-          try {
-            const args = JSON.parse(tc.function.arguments);
-            result.tool_calls.push({
-              id: tc.id,
-              name: tc.function.name,
-              arguments: args,
-            });
-          } catch {
-            console.error("Failed to parse tool call:", tc);
-          }
+      if (useTools) {
+        const toolCall = toolCalls[0];
+        if (toolCall) {
+          return new Response(JSON.stringify(toolCall.args), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
         }
       }
 
-      return new Response(JSON.stringify(result), {
+      return new Response(JSON.stringify({ content: text }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-
-    } else {
-      throw new Error(`Unknown action: ${action}`);
-    }
-
-    const aiMessages: any[] = [{ role: "system", content: systemPrompt }];
-    aiMessages.push({ role: "user", content: userPrompt });
-
-    const body: any = {
-      model: "google/gemini-3-flash-preview",
-      messages: aiMessages,
-    };
-
-    if (useStream) body.stream = true;
-    if (useTools) {
-      body.tools = tools;
-      body.tool_choice = toolChoice;
-    }
-
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      if (response.status === 429) {
+    } catch (e) {
+      if (e instanceof GeminiError && e.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limited. Please try again shortly." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted. Please add credits." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const t = await response.text();
-      console.error("AI error:", response.status, t);
+      console.error("Gemini error:", e instanceof Error ? e.message : e);
       throw new Error("AI gateway error");
     }
 
-    if (useStream) {
-      return new Response(response.body, {
-        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+  } catch (e) {
+    if (e instanceof UserError) {
+      return new Response(JSON.stringify({ error: e.message }), {
+        status: e.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    const data = await response.json();
-
-    if (useTools) {
-      const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-      if (toolCall) {
-        const result = JSON.parse(toolCall.function.arguments);
-        return new Response(JSON.stringify(result), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    }
-
-    return new Response(JSON.stringify({ content: data.choices?.[0]?.message?.content }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-
-  } catch (e) {
-    console.error("resume-ai error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
+    console.error("resume-ai error:", e instanceof Error ? e.message : e);
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
