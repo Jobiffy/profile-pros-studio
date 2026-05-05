@@ -97,7 +97,9 @@ Evaluate every section thoroughly. For each section, identify specific issues an
     try {
       ({ toolCalls } = await callGemini({
         apiKey: GEMINI_API_KEY,
-        model: "gemini-2.5-flash",
+        // flash-lite: scoring/analysis classification work, 10 RPM vs 5
+        // RPM on flash, and currently far less load-shedded on free tier.
+        model: "gemini-2.5-flash-lite",
         system: systemPrompt,
         messages: [{ role: "user", content: userPrompt }],
         tools: [linkedinReviewTool],

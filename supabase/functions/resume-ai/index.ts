@@ -292,6 +292,15 @@ serve(async (req) => {
     let tools: Tool[] = [];
     let toolChoice: { type: "function"; function: { name: string } } | undefined = undefined;
 
+    // Model selection: scoring/matching paths use the lighter, higher-quota
+    // flash-lite (10 RPM, 20 RPD vs. 5 RPM on flash) since classification
+    // doesn't need flash's reasoning headroom. Chat / parse-resume /
+    // tailor-resume keep flash for output quality.
+    const ANALYSIS_MODEL = "gemini-2.5-flash-lite";
+    const REASONING_MODEL = "gemini-2.5-flash";
+    const isAnalysis = action === "ats-score" || action === "jd-match";
+    const selectedModel = isAnalysis ? ANALYSIS_MODEL : REASONING_MODEL;
+
     if (action === "fetch-jd") {
       if (!url) throw new UserError("URL is required");
       const safeUrl = assertPublicHttpUrl(url);
@@ -505,7 +514,7 @@ INSTRUCTIONS:
     try {
       const { text, toolCalls } = await callGemini({
         apiKey: GEMINI_API_KEY,
-        model: "gemini-2.5-flash",
+        model: selectedModel,
         system: systemPrompt,
         messages: [{ role: "user", content: userPrompt }],
         tools: useTools ? tools : undefined,
