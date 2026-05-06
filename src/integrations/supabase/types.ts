@@ -68,6 +68,36 @@ export type Database = {
         }
         Relationships: []
       }
+      resumes: {
+        Row: {
+          chat_messages: Json
+          created_at: string
+          data: Json
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chat_messages?: Json
+          created_at?: string
+          data: Json
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          chat_messages?: Json
+          created_at?: string
+          data?: Json
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
