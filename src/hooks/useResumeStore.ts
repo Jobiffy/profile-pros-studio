@@ -430,6 +430,17 @@ export function useResumeStore() {
     setActiveId(id);
   }, []);
 
+  // Flush pending writes immediately. Callers that hold the JWT briefly
+  // (e.g. signOut) should await this so the last edits aren't lost when
+  // the session is revoked.
+  const flushNow = useCallback(async () => {
+    if (flushTimerRef.current != null) {
+      clearTimeout(flushTimerRef.current);
+      flushTimerRef.current = null;
+    }
+    await flush();
+  }, [flush]);
+
   return {
     resumes,
     activeResume,
@@ -441,5 +452,6 @@ export function useResumeStore() {
     deleteResume,
     renameResume,
     switchResume,
+    flushNow,
   };
 }

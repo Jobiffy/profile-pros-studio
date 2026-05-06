@@ -26,9 +26,17 @@ import { toast } from "@/hooks/use-toast";
 import {
   FileText, Sparkles, MessageSquare, Target, Briefcase,
   Download, Upload, Palette, Zap, Eye, EyeOff,
-  PanelLeftClose, PanelLeftOpen, LayoutList, Sun, Moon, FileDown,
-  Plus, X, FileEdit, Linkedin, Coins, User,
+  PanelLeftClose, PanelLeftOpen, LayoutList, FileDown,
+  Plus, X, FileEdit, Linkedin, Coins, ChevronDown,
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { BuilderProfileMenu } from "@/components/BuilderProfileMenu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type RightPanel = "none" | "ats" | "jd" | "chat";
 type LeftTab = "edit" | "templates" | "sections";
@@ -36,6 +44,7 @@ type LeftTab = "edit" | "templates" | "sections";
 const ResumeBuilder = () => {
   const navigate = useNavigate();
   const credits = useCredits();
+  const { signOut } = useAuth();
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateInfo>(templateList[0]);
   const [leftTab, setLeftTab] = useState<LeftTab>("edit");
   const [rightPanel, setRightPanel] = useState<RightPanel>("none");
@@ -272,6 +281,25 @@ const ResumeBuilder = () => {
   const handleNewResume = useCallback(() => {
     resumeStore.addResume(`Resume ${resumeStore.resumes.length + 1}`, { ...dummyResume });
   }, [resumeStore]);
+
+  const handleSignOut = useCallback(async () => {
+    // Drain any debounced resume writes while the JWT is still valid.
+    // The session is revoked on signOut, so deferred writes would fail RLS.
+    try {
+      await resumeStore.flushNow();
+    } catch { /* fall through; cache holds the data and merge recovers it */ }
+    try {
+      await signOut();
+    } catch (e) {
+      toast({
+        title: "Sign out failed",
+        description: e instanceof Error ? e.message : "Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    navigate("/auth");
+  }, [resumeStore, signOut, navigate]);
 
   const handleAnalyzeATS = useCallback(async () => {
     const ok = await credits.deductCredits("ats_check", "ATS Score analysis");
@@ -514,17 +542,6 @@ const ResumeBuilder = () => {
 
             <div className="w-px h-5 bg-border mx-1" />
 
-            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={toggleTheme}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
-              title={darkMode ? "Switch to light mode" : "Switch to dark mode"}>
-              {darkMode ? <Sun size={15} /> : <Moon size={15} />}
-            </motion.button>
-
-            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => navigate("/profile")}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all">
-              <User size={14} /> Profile
-            </motion.button>
-
             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setShowImport(true)}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all">
               <Upload size={14} /> Import
@@ -555,25 +572,50 @@ const ResumeBuilder = () => {
               </motion.button>
             )}
 
-            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-              onClick={async () => {
-                toast({ title: "Exporting DOCX..." });
-                await exportToDOCX(orderedResumeData, `${exportFileBase()}_Resume.docx`);
-                toast({ title: "DOCX downloaded!" });
-              }}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all">
-              <FileDown size={14} /> DOCX
-            </motion.button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  id="export-btn"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium bg-primary text-primary-foreground shadow-sm hover:opacity-90 transition-opacity"
+                >
+                  <Download size={14} /> Export <ChevronDown size={12} />
+                </motion.button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" sideOffset={8} className="w-44">
+                <DropdownMenuItem
+                  onSelect={async () => {
+                    toast({ title: "Exporting PDF..." });
+                    await exportToPDF("resume-preview", `${exportFileBase()}_Resume.pdf`);
+                    toast({ title: "PDF downloaded!" });
+                  }}
+                  className="gap-2 cursor-pointer"
+                >
+                  <Download size={14} />
+                  <span>Download PDF</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={async () => {
+                    toast({ title: "Exporting DOCX..." });
+                    await exportToDOCX(orderedResumeData, `${exportFileBase()}_Resume.docx`);
+                    toast({ title: "DOCX downloaded!" });
+                  }}
+                  className="gap-2 cursor-pointer"
+                >
+                  <FileDown size={14} />
+                  <span>Download DOCX</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-              onClick={async () => {
-                toast({ title: "Exporting PDF..." });
-                await exportToPDF("resume-preview", `${exportFileBase()}_Resume.pdf`);
-                toast({ title: "PDF downloaded!" });
-              }}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium bg-primary text-primary-foreground shadow-sm hover:opacity-90 transition-opacity" id="export-btn">
-              <Download size={14} /> PDF
-            </motion.button>
+            <div className="w-px h-5 bg-border mx-1" />
+
+            <BuilderProfileMenu
+              darkMode={darkMode}
+              onToggleTheme={toggleTheme}
+              onSignOut={handleSignOut}
+            />
           </div>
         </motion.div>
 
