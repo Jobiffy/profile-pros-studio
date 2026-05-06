@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/hooks/useCredits";
@@ -6,11 +6,14 @@ import { useNavigate } from "react-router-dom";
 import { JobiffyLogo } from "@/components/JobiffyLogo";
 import {
   Coins, Plus, ArrowLeft, LogOut, User, Zap, MessageSquare, Target, Briefcase,
-  TrendingUp, TrendingDown, Gift, CreditCard, Loader2, Sparkles, Crown,
+  TrendingUp, TrendingDown, Gift, CreditCard, Loader2, Sparkles, Crown, Camera,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+
+const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 
 const topUpOptions = [
   { amount: 25, price: "₹49", popular: false },
@@ -32,6 +35,15 @@ const Profile = () => {
   const { balance, transactions, loading, addCredits, CREDIT_COSTS } = useCredits();
   const navigate = useNavigate();
   const [topUpLoading, setTopUpLoading] = useState<number | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Precedence: user upload first (sticky across re-auth), then OAuth claims.
+  const avatarUrl =
+    user?.user_metadata?.custom_avatar_url ||
+    user?.user_metadata?.avatar_url ||
+    user?.user_metadata?.picture ||
+    null;
 
   const handleTopUp = async (amount: number) => {
     if (topUpLoading !== null) return;
@@ -51,6 +63,55 @@ const Profile = () => {
       return;
     }
     navigate("/");
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    // Reset the input so picking the same file twice still fires onChange.
+    e.target.value = "";
+    if (!file || !user) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Invalid file", description: "Please choose an image.", variant: "destructive" });
+      return;
+    }
+    if (file.size > MAX_AVATAR_BYTES) {
+      toast({ title: "File too large", description: "Max 2MB.", variant: "destructive" });
+      return;
+    }
+
+    setAvatarUploading(true);
+    try {
+      // Path is namespaced by user id; storage RLS gates writes by the
+      // first segment matching auth.uid().
+      const ext = (file.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "") || "png";
+      const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
+      if (uploadError) throw uploadError;
+
+      const { data: publicData } = supabase.storage.from("avatars").getPublicUrl(path);
+      const publicUrl = publicData.publicUrl;
+      if (!publicUrl) throw new Error("Could not resolve public URL.");
+
+      // Stored under custom_avatar_url so a future Google re-auth doesn't
+      // overwrite it (Supabase refreshes avatar_url from the OAuth claim).
+      const { error: updateError } = await supabase.auth.updateUser({
+        data: { custom_avatar_url: publicUrl },
+      });
+      if (updateError) throw updateError;
+
+      toast({ title: "Photo updated" });
+    } catch (err) {
+      toast({
+        title: "Upload failed",
+        description: err instanceof Error ? err.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setAvatarUploading(false);
+    }
   };
 
   if (loading) {
@@ -85,8 +146,32 @@ const Profile = () => {
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col md:flex-row items-start md:items-center gap-6 mb-10"
         >
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground text-2xl font-bold shadow-xl shadow-primary/20">
-            {user?.email?.charAt(0).toUpperCase() || "U"}
+          <div className="relative group">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={avatarUploading}
+              className="relative w-20 h-20 rounded-2xl overflow-hidden shadow-xl shadow-primary/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-70"
+              title="Change photo"
+            >
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground text-2xl font-bold">
+                  {user?.email?.charAt(0).toUpperCase() || "U"}
+                </div>
+              )}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center text-white opacity-0 group-hover:opacity-100">
+                {avatarUploading ? <Loader2 size={20} className="animate-spin" /> : <Camera size={20} />}
+              </div>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarChange}
+            />
           </div>
           <div className="flex-1">
             <h1 className="text-2xl font-bold text-foreground font-space">Your Profile</h1>

@@ -38,7 +38,11 @@ export const ProfileDropdown: React.FC = () => {
 
   if (!user) return null;
 
+  // custom_avatar_url is sticky across re-auth; OAuth claims (avatar_url /
+  // picture) are refreshed by Supabase on every Google sign-in, so they're
+  // only the fallback.
   const avatarUrl =
+    user.user_metadata?.custom_avatar_url ||
     user.user_metadata?.avatar_url ||
     user.user_metadata?.picture ||
     null;

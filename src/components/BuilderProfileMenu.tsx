@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { User, Sun, Moon, LogOut, UserCircle } from "lucide-react";
+import { Sun, Moon, LogOut, UserCircle } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,6 +9,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface BuilderProfileMenuProps {
   darkMode: boolean;
@@ -25,17 +27,44 @@ export const BuilderProfileMenu: React.FC<BuilderProfileMenuProps> = ({
   onSignOut,
 }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // Precedence: user upload first (sticky across re-auth), then OAuth
+  // claims. avatar_url is what Supabase populates from Google, picture is
+  // a legacy fallback some providers used.
+  const avatarUrl =
+    user?.user_metadata?.custom_avatar_url ||
+    user?.user_metadata?.avatar_url ||
+    user?.user_metadata?.picture ||
+    null;
+
+  const email = user?.email || "";
+  const fullName =
+    user?.user_metadata?.full_name || user?.user_metadata?.name || "";
+  const initials =
+    (fullName || email)
+      .split(/[\s@]/)
+      .filter(Boolean)
+      .map((w: string) => w[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "U";
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           title="Account"
         >
-          <User size={16} />
+          <Avatar className="h-8 w-8 border border-border/60 hover:border-primary/40 transition-colors">
+            {avatarUrl ? <AvatarImage src={avatarUrl} alt="Profile" /> : null}
+            <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground text-[11px] font-bold">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
         </motion.button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={8} className="w-48">
