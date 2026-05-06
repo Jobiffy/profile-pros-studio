@@ -230,7 +230,7 @@ export function useResumeAI(resumeData: ResumeData, resumeId: string) {
 
     } catch (e) {
       // Only surface the error toast if we're still on the resume that
-      // sent the request — a "Chat Error" pop on resume B for a failure
+      // sent the request - a "Chat Error" pop on resume B for a failure
       // that happened on A would be confusing.
       if (resumeIdRef.current === sentForResumeId) {
         toast({ title: "Chat Error", description: e instanceof Error ? e.message : "Unknown error", variant: "destructive" });

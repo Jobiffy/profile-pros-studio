@@ -19,7 +19,7 @@ export const ElegantRefined = ({ data, sectionOrder, changedFields, showChanges 
             <ul className="space-y-0.5">
               {exp.bullets.map((b, j) => (
                 <li key={j} className="flex gap-2">
-                  <span style={{ color: 'var(--resume-accent, #d4af37)' }}>—</span>
+                  <span style={{ color: 'var(--resume-accent, #d4af37)' }}>-</span>
                   <span>{b}</span>
                 </li>
               ))}
@@ -69,7 +69,7 @@ export const ElegantRefined = ({ data, sectionOrder, changedFields, showChanges 
         {data.projects.map((p, i) => (
           <div key={i} className="mb-3">
             <p className="font-playfair font-semibold">{p.name}</p>
-            {p.bullets.map((b, j) => <li key={j} className="flex gap-2"><span style={{ color: 'var(--resume-accent, #d4af37)' }}>—</span>{b}</li>)}
+            {p.bullets.map((b, j) => <li key={j} className="flex gap-2"><span style={{ color: 'var(--resume-accent, #d4af37)' }}>-</span>{b}</li>)}
           </div>
         ))}
       </>
@@ -80,7 +80,7 @@ export const ElegantRefined = ({ data, sectionOrder, changedFields, showChanges 
         {data.leadership.map((l, i) => (
           <div key={i} className="mb-3">
             <p className="font-playfair font-semibold">{l.role} – {l.org}</p>
-            {l.bullets.map((b, j) => <li key={j} className="flex gap-2"><span style={{ color: 'var(--resume-accent, #d4af37)' }}>—</span>{b}</li>)}
+            {l.bullets.map((b, j) => <li key={j} className="flex gap-2"><span style={{ color: 'var(--resume-accent, #d4af37)' }}>-</span>{b}</li>)}
           </div>
         ))}
       </>
@@ -95,7 +95,7 @@ export const ElegantRefined = ({ data, sectionOrder, changedFields, showChanges 
           <div key={j} className="mb-3">
             {item.subtitle && <p className="font-playfair font-semibold">{item.subtitle}</p>}
             {item.description && <p className="italic">{item.description}</p>}
-            {item.bullets?.map((b, k) => <li key={k} className="flex gap-2"><span style={{ color: 'var(--resume-accent, #d4af37)' }}>—</span>{b}</li>)}
+            {item.bullets?.map((b, k) => <li key={k} className="flex gap-2"><span style={{ color: 'var(--resume-accent, #d4af37)' }}>-</span>{b}</li>)}
           </div>
         ))}
       </>

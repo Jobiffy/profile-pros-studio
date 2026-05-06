@@ -7,13 +7,13 @@ instance. nginx serves it at `https://ai.jobiffy.co/ai-resume-builder/`.
 
 | File | Purpose |
 |---|---|
-| `nginx.conf` | Server block for `ai.jobiffy.co` — copy to `/etc/nginx/sites-available/`. |
+| `nginx.conf` | Server block for `ai.jobiffy.co` - copy to `/etc/nginx/sites-available/`. |
 | `ec2-bootstrap.sh` | One-time setup for a fresh Ubuntu EC2: installs nginx, creates `deploy` user, opens UFW. |
 | `README.md` | This file. |
 
 The Actions workflow itself lives at [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml).
 
-## First-time deploy — the path from a fresh EC2 to a live site
+## First-time deploy - the path from a fresh EC2 to a live site
 
 These steps are one-time. After they're done, every push to `main` deploys
 automatically.
@@ -57,7 +57,7 @@ In the EC2 console, edit the instance's security group. Inbound rules:
 | HTTPS | 443 | 0.0.0.0/0 |
 | SSH | 22 | your IP only |
 
-UFW on the instance is now also restricting these — both layers must allow.
+UFW on the instance is now also restricting these - both layers must allow.
 
 ### 4. DNS
 
@@ -149,7 +149,7 @@ browser. You should see the Landing page.
 Every push to `main` triggers `.github/workflows/deploy.yml`:
 
 1. Checkout, `npm ci`, `npm run build`.
-2. SSH-rsync `dist/` (minus `index.html`) to the instance — new hashed
+2. SSH-rsync `dist/` (minus `index.html`) to the instance - new hashed
    assets land alongside old ones.
 3. SSH-rsync `index.html` last, so visitors atomically flip from the old
    bundle to the new one.

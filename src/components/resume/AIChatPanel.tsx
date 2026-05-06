@@ -67,7 +67,7 @@ export function AIChatPanel({ messages, loading, onSend, resumeName }: Props) {
   // Defensive teardown: detach listeners before stop() so a late onresult /
   // onend / onerror that fires after stop can't hit a state setter on an
   // unmounted component. Some browsers fire one trailing event post-stop.
-  // .stop() can throw InvalidStateError if already stopped — swallow it.
+  // .stop() can throw InvalidStateError if already stopped - swallow it.
   const teardownRecognition = () => {
     const r = recognitionRef.current;
     if (!r) return;
@@ -127,7 +127,7 @@ export function AIChatPanel({ messages, loading, onSend, resumeName }: Props) {
           <div>
             <h3 className="text-sm font-semibold text-foreground">Jobiffy AI Resume Coach</h3>
             <p className="text-[10px] text-muted-foreground">
-              {resumeName ? `Editing: ${resumeName}` : "Edit, reorder, improve — just ask"}
+              {resumeName ? `Editing: ${resumeName}` : "Edit, reorder, improve - just ask"}
             </p>
           </div>
         </div>
@@ -147,7 +147,7 @@ export function AIChatPanel({ messages, loading, onSend, resumeName }: Props) {
                 </motion.div>
                 <p className="text-sm font-semibold text-foreground">Hi! I'm your Jobiffy AI Resume Coach</p>
                 <p className="text-xs text-muted-foreground mt-1 max-w-[260px] mx-auto">
-                  I can modify content, reorder sections, add/remove items, and optimize your resume — all changes appear instantly
+                  I can modify content, reorder sections, add/remove items, and optimize your resume - all changes appear instantly
                 </p>
               </div>
 

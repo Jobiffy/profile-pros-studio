@@ -16,7 +16,7 @@ export const ConsultingPro = ({ data, sectionOrder, changedFields, showChanges }
         {data.experience.map((exp, i) => (
           <div key={i} className="mb-4 pl-3" style={{ borderLeft: `2px solid var(--resume-accent, #0B3D2E)` }}>
             <div className="flex justify-between">
-              <div><span className="font-bold">{exp.company}</span> — <span>{exp.location}</span></div>
+              <div><span className="font-bold">{exp.company}</span> - <span>{exp.location}</span></div>
               <span className="text-[10px]" style={{ color: '#666' }}>{exp.startDate} – {exp.endDate}</span>
             </div>
             <p className="italic text-[10.5px] mb-1">{exp.title}</p>
@@ -38,7 +38,7 @@ export const ConsultingPro = ({ data, sectionOrder, changedFields, showChanges }
         {data.education.map((edu, i) => (
           <div key={i} className="mb-2 flex justify-between">
             <div>
-              <span className="font-bold">{edu.school}</span> — {edu.degree}
+              <span className="font-bold">{edu.school}</span> - {edu.degree}
               {edu.gpa && <span className="ml-2 text-[10px]">({edu.gpa})</span>}
             </div>
             <span className="text-[10px]">{edu.startDate} – {edu.endDate}</span>

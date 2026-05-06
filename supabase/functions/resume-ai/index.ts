@@ -336,11 +336,11 @@ serve(async (req) => {
       systemPrompt = `You are an expert resume parser. Your job is to extract ALL information from the provided resume text with 100% accuracy.
 
 CRITICAL RULES:
-1. Extract data from ALL pages — the text may span multiple pages. Do not stop at the first page.
-2. Parse every section completely — every bullet point, every date, every detail.
+1. Extract data from ALL pages - the text may span multiple pages. Do not stop at the first page.
+2. Parse every section completely - every bullet point, every date, every detail.
 3. Handle various layouts: single-column, two-column, tables, creative/Canva templates, Word templates.
 4. Clean up formatting artifacts: fix broken words, merge split lines, remove page numbers/headers/footers.
-5. For the header: extract name, job title/headline, email, phone, LinkedIn URL, GitHub URL, portfolio/website URL, and location. Look for these across the entire document — some resumes put contact info in sidebars or footers.
+5. For the header: extract name, job title/headline, email, phone, LinkedIn URL, GitHub URL, portfolio/website URL, and location. Look for these across the entire document - some resumes put contact info in sidebars or footers.
 6. For experience: extract ALL positions with full bullet points. Preserve the original meaning and metrics.
 7. For education: extract degree, school, dates, GPA if present, and any honors/details.
 8. For skills: group by category if the resume does so, otherwise create logical categories (e.g., "Programming Languages", "Tools & Frameworks", "Soft Skills").
@@ -358,7 +358,7 @@ CRITICAL RULES:
       if (!jobDescription) throw new UserError("Job description is required");
       useTools = true;
       systemPrompt = `You are an expert resume optimizer. Given a resume and a job description, optimize the resume to maximize the match with the job. Rules:
-1. Keep the same person's real experience — do NOT fabricate roles, companies, or degrees.
+1. Keep the same person's real experience - do NOT fabricate roles, companies, or degrees.
 2. Rewrite bullet points to emphasize relevant skills and use keywords from the JD.
 3. Reorder skills to prioritize those mentioned in the JD.
 4. Enhance the summary to align with the target role.
@@ -443,20 +443,20 @@ CRITICAL RULES:
         ? `\n\nCurrent section order: ${JSON.stringify(resumeData.sectionOrder)}`
         : "";
 
-      systemPrompt = `You are Jobiffy AI Resume Coach — a friendly, expert resume assistant. You help users improve their resumes through conversation and direct modifications.
+      systemPrompt = `You are Jobiffy AI Resume Coach - a friendly, expert resume assistant. You help users improve their resumes through conversation and direct modifications.
 
 PERSONALITY:
 - Be warm, approachable, and encouraging
-- Respond naturally to greetings like "Hi", "Hello", "How are you?" — introduce yourself and offer to help
+- Respond naturally to greetings like "Hi", "Hello", "How are you?" - introduce yourself and offer to help
 - For casual messages, respond conversationally but always steer toward resume improvement
-- Be proactive — suggest improvements when you see opportunities
+- Be proactive - suggest improvements when you see opportunities
 
 CAPABILITIES - You can:
-1. **Modify any section** — rewrite summaries, improve bullet points, update titles, add metrics
-2. **Reorder sections** — move sections up or down (e.g., put skills before experience)
-3. **Show/hide sections** — toggle sections on or off
-4. **Add new items** — add experience entries, skills, projects, certifications, etc.
-5. **Remove items** — remove specific entries from any section
+1. **Modify any section** - rewrite summaries, improve bullet points, update titles, add metrics
+2. **Reorder sections** - move sections up or down (e.g., put skills before experience)
+3. **Show/hide sections** - toggle sections on or off
+4. **Add new items** - add experience entries, skills, projects, certifications, etc.
+5. **Remove items** - remove specific entries from any section
 
 CURRENT RESUME DATA:
 ${resumeText}${sectionOrderInfo}
@@ -472,7 +472,7 @@ INSTRUCTIONS:
       const turns: { role: "user" | "assistant"; content: string }[] = [];
       if (messages) {
         for (const m of messages) {
-          // Skip the legacy multi-turn tool_calls/tool_results path — the client
+          // Skip the legacy multi-turn tool_calls/tool_results path - the client
           // doesn't send those; each turn is fresh role+content.
           if (m.role === "user" || m.role === "assistant") {
             turns.push({ role: m.role, content: m.content });

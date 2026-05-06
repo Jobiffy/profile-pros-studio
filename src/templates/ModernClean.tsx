@@ -30,7 +30,7 @@ export const ModernClean = ({ data, sectionOrder, changedFields, showChanges }: 
           <div key={i} className="mb-3 flex justify-between">
             <div>
               <p className="font-semibold">{edu.degree}</p>
-              <p className="text-[10px]" style={{ color: '#999' }}>{edu.school}{edu.gpa && ` — ${edu.gpa}`}</p>
+              <p className="text-[10px]" style={{ color: '#999' }}>{edu.school}{edu.gpa && ` - ${edu.gpa}`}</p>
             </div>
             <span className="text-[10px]" style={{ color: '#bbb' }}>{edu.endDate}</span>
           </div>

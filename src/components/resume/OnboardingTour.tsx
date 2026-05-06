@@ -29,8 +29,8 @@ const steps: Step[] = [
   },
   {
     icon: Target,
-    title: "⭐ Resume Score — Your Secret Weapon",
-    description: "Get an instant ATS compatibility score. Our AI analyzes formatting, keywords, quantified achievements, and readability. Most resumes score under 60 — we help you hit 90+.",
+    title: "⭐ Resume Score - Your Secret Weapon",
+    description: "Get an instant ATS compatibility score. Our AI analyzes formatting, keywords, quantified achievements, and readability. Most resumes score under 60 - we help you hit 90+.",
     highlight: "ats-panel",
     isUSP: true,
     uspLabel: "CORE USP",
@@ -38,7 +38,7 @@ const steps: Step[] = [
   },
   {
     icon: Briefcase,
-    title: "⭐ JD Matcher — Land More Interviews",
+    title: "⭐ JD Matcher - Land More Interviews",
     description: "Paste a job link or description and see your match score instantly. Get missing keywords, skills gap analysis, and exact recommendations to increase your match rate by 40%+.",
     highlight: "jd-panel",
     isUSP: true,
@@ -47,7 +47,7 @@ const steps: Step[] = [
   },
   {
     icon: MessageSquare,
-    title: "⭐ AI Coach — Rewrite in Seconds",
+    title: "⭐ AI Coach - Rewrite in Seconds",
     description: "Chat with your personal AI resume coach. It rewrites bullets with metrics, tailors your resume for specific roles, and applies changes to your resume in real-time. Like having an expert career counselor 24/7.",
     highlight: "chat-panel",
     isUSP: true,

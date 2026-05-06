@@ -1,11 +1,11 @@
-# External (Non-Supabase) Backend APIs — profile-pros-studio
+# External (Non-Supabase) Backend APIs - profile-pros-studio
 
 This document covers every backend API the app talks to that is **not** Supabase. Supabase Auth, PostgREST DB, and Edge Function endpoints are documented separately in [BACKEND.md](BACKEND.md).
 
 There are two external surfaces:
 
-1. **Google Gemini (Generative Language API)** — Google's native LLM endpoint (Gemini models). Called only from inside Supabase Edge Functions; the API key never leaves the server.
-2. **Server-side URL fetch (job posting scrape)** — the `fetch-jd` Edge Function action does a server-side `fetch()` against an arbitrary user-supplied URL.
+1. **Google Gemini (Generative Language API)** - Google's native LLM endpoint (Gemini models). Called only from inside Supabase Edge Functions; the API key never leaves the server.
+2. **Server-side URL fetch (job posting scrape)** - the `fetch-jd` Edge Function action does a server-side `fetch()` against an arbitrary user-supplied URL.
 
 ---
 
@@ -16,9 +16,9 @@ Google's native LLM API. All AI calls in the app go directly here from the Supab
 - **Endpoint:** `POST https://generativelanguage.googleapis.com/v1beta/models/<model>:generateContent`
 - **Auth header:** `x-goog-api-key: ${GEMINI_API_KEY}`
 - **`GEMINI_API_KEY`:** read from `Deno.env` inside the Edge Functions. **Never** exposed to the browser. Provisioned at <https://aistudio.google.com/apikey>.
-- **Request shape:** Gemini-native — `{ systemInstruction, contents: [{role, parts}], tools, toolConfig, generationConfig }`.
-- **Response shape:** Gemini-native — `data.candidates[0].content.parts[]` with each part being either `{ text }` or `{ functionCall: { name, args } }`.
-- **Adapter:** [supabase/functions/_shared/gemini.ts](../supabase/functions/_shared/gemini.ts) — `callGemini()` translates an OpenAI-style request (system + role/content messages, OpenAI tool schemas, optional forced tool name) into Gemini's native shape and normalizes the response back to `{ text, toolCalls }`. Strips `additionalProperties` and `$schema` from tool schemas (Gemini's OpenAPI subset doesn't accept them).
+- **Request shape:** Gemini-native - `{ systemInstruction, contents: [{role, parts}], tools, toolConfig, generationConfig }`.
+- **Response shape:** Gemini-native - `data.candidates[0].content.parts[]` with each part being either `{ text }` or `{ functionCall: { name, args } }`.
+- **Adapter:** [supabase/functions/_shared/gemini.ts](../supabase/functions/_shared/gemini.ts) - `callGemini()` translates an OpenAI-style request (system + role/content messages, OpenAI tool schemas, optional forced tool name) into Gemini's native shape and normalizes the response back to `{ text, toolCalls }`. Strips `additionalProperties` and `$schema` from tool schemas (Gemini's OpenAPI subset doesn't accept them).
 
 ### Models used
 
@@ -36,7 +36,7 @@ Google's native LLM API. All AI calls in the app go directly here from the Supab
 | `ats-score`          | [resume-ai/index.ts:512](../supabase/functions/resume-ai/index.ts#L512)                                    | Forced tool: `ats_analysis`                                        |
 | `jd-match`           | [resume-ai/index.ts:512](../supabase/functions/resume-ai/index.ts#L512)                                    | Forced tool: `jd_match_analysis`                                   |
 | `chat`               | [resume-ai/index.ts:440](../supabase/functions/resume-ai/index.ts#L440)                                    | `chatTools` available, no forced tool choice                       |
-| `fetch-jd` (extract) | [resume-ai/index.ts:254](../supabase/functions/resume-ai/index.ts#L254)                                    | No tools — plain text completion to clean up scraped HTML          |
+| `fetch-jd` (extract) | [resume-ai/index.ts:254](../supabase/functions/resume-ai/index.ts#L254)                                    | No tools - plain text completion to clean up scraped HTML          |
 | `linkedin-review`    | [linkedin-review/index.ts:44](../supabase/functions/linkedin-review/index.ts#L44)                          | Forced tool: `linkedin_review`                                     |
 
 ### Example request
@@ -79,11 +79,11 @@ The Edge Functions translate Gemini errors into the responses the client sees:
 
 The gateway is asked to produce structured output via OpenAI tool calling. Schemas are declared in the Edge Function code:
 
-- `parsed_resume` — full `ResumeData` shape ([resume-ai/index.ts:9-110](../supabase/functions/resume-ai/index.ts#L9-L110)).
-- `ats_analysis` — `{ overallScore, categories[], topStrengths[], criticalIssues[], quickWins[] }` ([resume-ai/index.ts:320-348](../supabase/functions/resume-ai/index.ts#L320-L348)).
-- `jd_match_analysis` — `{ matchScore, matchedKeywords[], missingKeywords[], experienceMatch, skillsGap[], recommendations[], sectionFeedback[] }` ([resume-ai/index.ts:355-382](../supabase/functions/resume-ai/index.ts#L355-L382)).
-- `chatTools` — `update_section`, `reorder_sections`, `toggle_section`, `add_item`, `remove_item` ([resume-ai/index.ts:113-220](../supabase/functions/resume-ai/index.ts#L113-L220)).
-- `linkedin_review` — `{ overallScore, projectedOverallScore, summary, profileName, profileHeadline, sections[], topStrengths[], criticalImprovements[] }` ([linkedin-review/index.ts:62-90](../supabase/functions/linkedin-review/index.ts#L62-L90)).
+- `parsed_resume` - full `ResumeData` shape ([resume-ai/index.ts:9-110](../supabase/functions/resume-ai/index.ts#L9-L110)).
+- `ats_analysis` - `{ overallScore, categories[], topStrengths[], criticalIssues[], quickWins[] }` ([resume-ai/index.ts:320-348](../supabase/functions/resume-ai/index.ts#L320-L348)).
+- `jd_match_analysis` - `{ matchScore, matchedKeywords[], missingKeywords[], experienceMatch, skillsGap[], recommendations[], sectionFeedback[] }` ([resume-ai/index.ts:355-382](../supabase/functions/resume-ai/index.ts#L355-L382)).
+- `chatTools` - `update_section`, `reorder_sections`, `toggle_section`, `add_item`, `remove_item` ([resume-ai/index.ts:113-220](../supabase/functions/resume-ai/index.ts#L113-L220)).
+- `linkedin_review` - `{ overallScore, projectedOverallScore, summary, profileName, profileHeadline, sections[], topStrengths[], criticalImprovements[] }` ([linkedin-review/index.ts:62-90](../supabase/functions/linkedin-review/index.ts#L62-L90)).
 
 ---
 
@@ -118,7 +118,7 @@ fetch(url, {
 
 ### Security note
 
-This is a server-side fetch of attacker-controlled URLs — a minor **SSRF** surface. If Supabase's edge runtime can route to internal addresses or cloud metadata IPs, a user could probe them. Mitigations to consider: blocklist RFC1918 / link-local / cloud metadata (`169.254.169.254`), require `https://`, cap response size before reading, set a tight timeout.
+This is a server-side fetch of attacker-controlled URLs - a minor **SSRF** surface. If Supabase's edge runtime can route to internal addresses or cloud metadata IPs, a user could probe them. Mitigations to consider: blocklist RFC1918 / link-local / cloud metadata (`169.254.169.254`), require `https://`, cap response size before reading, set a tight timeout.
 
 ---
 
@@ -129,4 +129,4 @@ This is a server-side fetch of attacker-controlled URLs — a minor **SSRF** sur
 | Google Gemini (Generative Language API)           | Supabase Edge Functions (server-side)   | `Bearer ${GEMINI_API_KEY}` (server)| Resume data, JD text, profile text, prompts| LLM completion + structured tool-call JSON   |
 | Arbitrary JD URLs (`fetch-jd`)| Supabase Edge Function (server-side)   | None (anonymous GET)                | Plain HTTP GET with custom UA              | HTML, then sliced/cleaned and AI-extracted   |
 
-> Everything else — DB reads/writes, auth session, user accounts, credit ledger, Edge Functions — is Supabase. See [BACKEND.md](BACKEND.md).
+> Everything else - DB reads/writes, auth session, user accounts, credit ledger, Edge Functions - is Supabase. See [BACKEND.md](BACKEND.md).

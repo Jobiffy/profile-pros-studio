@@ -8,7 +8,7 @@ import { toast } from "@/hooks/use-toast";
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 
 // pdf.js (~1.5 MB) and mammoth (~300 KB) are loaded only when the user
-// actually imports a resume — keeps them out of the initial bundle.
+// actually imports a resume - keeps them out of the initial bundle.
 async function extractTextFromPdf(file: File): Promise<string> {
   const [pdfjsLib, workerModule] = await Promise.all([
     import("pdfjs-dist"),

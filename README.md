@@ -1,4 +1,4 @@
-# Jobiffy — Profile Pros Studio
+# Jobiffy - Profile Pros Studio
 
 AI-powered resume builder, ATS scorer, JD matcher, and LinkedIn profile reviewer.
 
@@ -36,11 +36,11 @@ VITE_SUPABASE_PROJECT_ID="<your-project-ref>"
 
 ## Documentation
 
-- [docs/BACKEND.md](docs/BACKEND.md) — database schema, Supabase APIs, Edge Functions
-- [docs/EXTERNAL_APIS.md](docs/EXTERNAL_APIS.md) — non-Supabase backend surfaces
+- [docs/BACKEND.md](docs/BACKEND.md) - database schema, Supabase APIs, Edge Functions
+- [docs/EXTERNAL_APIS.md](docs/EXTERNAL_APIS.md) - non-Supabase backend surfaces
 
 ## Project structure
 
-- `src/` — React app
-- `supabase/migrations/` — Postgres schema
-- `supabase/functions/` — Deno-based Edge Functions (`resume-ai`, `linkedin-review`)
+- `src/` - React app
+- `supabase/migrations/` - Postgres schema
+- `supabase/functions/` - Deno-based Edge Functions (`resume-ai`, `linkedin-review`)

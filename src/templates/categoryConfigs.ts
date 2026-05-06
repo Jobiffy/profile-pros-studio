@@ -73,7 +73,7 @@ export const pmTemplates: CategoryTemplateConfig[] = [
 ];
 
 // ═══════════════════════════════════════
-// TECH TEMPLATES (10 — 5 existing + 5 new)
+// TECH TEMPLATES (10 - 5 existing + 5 new)
 // ═══════════════════════════════════════
 export const newTechTemplates: CategoryTemplateConfig[] = [
   { id: "tech-fullstack", name: "Full Stack Dev", category: "tech", description: "Comprehensive full-stack developer layout", preview: "#00BFA5", layout: "single", fontBody: "'system-ui', sans-serif", fontHeading: "'system-ui', sans-serif", defaultAccent: "#00BFA5", headerAlign: "left", sectionStyle: "dot", bulletStyle: "arrow" },

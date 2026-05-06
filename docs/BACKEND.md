@@ -1,4 +1,4 @@
-# Backend Documentation — profile-pros-studio
+# Backend Documentation - profile-pros-studio
 
 This document covers the database schema, data storage locations, and every backend API used by the app.
 
@@ -47,32 +47,32 @@ Append-only ledger of every credit change.
 
 ### Triggers / Functions
 
-- `update_updated_at_column()` — sets `NEW.updated_at = now()` on UPDATE.
+- `update_updated_at_column()` - sets `NEW.updated_at = now()` on UPDATE.
 - Trigger `update_user_credits_updated_at` on `BEFORE UPDATE OF user_credits`.
-- `handle_new_user_credits()` (`SECURITY DEFINER`) — on `auth.users INSERT`, seeds a 50-credit row in `user_credits` plus a `signup_bonus` row in `credit_transactions`.
+- `handle_new_user_credits()` (`SECURITY DEFINER`) - on `auth.users INSERT`, seeds a 50-credit row in `user_credits` plus a `signup_bonus` row in `credit_transactions`.
 - Trigger `on_auth_user_created_credits` on `AFTER INSERT ON auth.users`.
 
 ---
 
 ## 2. Data Storage Locations
 
-### Supabase (Postgres) — server side
-- `auth.users` — accounts (managed by Supabase Auth).
-- `public.user_credits` — balances.
-- `public.credit_transactions` — credit ledger.
+### Supabase (Postgres) - server side
+- `auth.users` - accounts (managed by Supabase Auth).
+- `public.user_credits` - balances.
+- `public.credit_transactions` - credit ledger.
 
-### Browser `localStorage` — per-device
+### Browser `localStorage` - per-device
 Resume content is **not** in Supabase; it lives in the browser. Defined in [src/hooks/useResumeStore.ts](../src/hooks/useResumeStore.ts).
 
 | Key                      | Contents                                                                                                                                                  |
 |--------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `jobiffy-resumes`        | JSON array of `SavedResume` — `{ id, name, data: ResumeData, chatMessages, createdAt, updatedAt }`. `ResumeData` shape is in [src/types/resume.ts](../src/types/resume.ts). |
+| `jobiffy-resumes`        | JSON array of `SavedResume` - `{ id, name, data: ResumeData, chatMessages, createdAt, updatedAt }`. `ResumeData` shape is in [src/types/resume.ts](../src/types/resume.ts). |
 | `jobiffy-active-resume`  | Id of the currently selected resume.                                                                                                                      |
 | `jobiffy-theme`          | `"dark"` \| `"light"` ([src/pages/ResumeBuilder.tsx](../src/pages/ResumeBuilder.tsx)).                                                                     |
 | `jobiffy-onboarded`      | `"true"` once the onboarding tour is dismissed.                                                                                                           |
 | Supabase auth session    | JWT/refresh tokens written by `@supabase/supabase-js` because [src/integrations/supabase/client.ts](../src/integrations/supabase/client.ts) sets `storage: localStorage, persistSession: true`. |
 
-> Implication: resumes are **device-local**. A user signing in on a different browser sees only their credit balance — not their saved resumes.
+> Implication: resumes are **device-local**. A user signing in on a different browser sees only their credit balance - not their saved resumes.
 
 ---
 
@@ -92,32 +92,32 @@ Resume content is **not** in Supabase; it lives in the browser. Defined in [src/
 
 All under `https://<project>.supabase.co/rest/v1/`. RLS-gated to the authenticated user. All calls live in [src/hooks/useCredits.ts](../src/hooks/useCredits.ts).
 
-### `GET user_credits` — fetch balance
+### `GET user_credits` - fetch balance
 ```ts
 supabase.from("user_credits").select("balance").eq("user_id", user.id).maybeSingle()
 ```
 Returns `{ balance: number } | null`.
 
-### `INSERT user_credits` — backfill row for an existing user missing one
+### `INSERT user_credits` - backfill row for an existing user missing one
 ```ts
 supabase.from("user_credits").insert({ user_id, balance: 50 })
 ```
 Normally the `on_auth_user_created_credits` trigger handles signup; this is the backfill path.
 
-### `UPDATE user_credits` — change balance
+### `UPDATE user_credits` - change balance
 ```ts
 supabase.from("user_credits").update({ balance: newBalance }).eq("user_id", user.id)
 ```
 The `update_user_credits_updated_at` trigger bumps `updated_at` automatically.
 
-### `GET credit_transactions` — list recent transactions
+### `GET credit_transactions` - list recent transactions
 ```ts
 supabase.from("credit_transactions")
   .select("*").eq("user_id", user.id)
   .order("created_at", { ascending: false }).limit(50)
 ```
 
-### `INSERT credit_transactions` — append ledger entry
+### `INSERT credit_transactions` - append ledger entry
 ```ts
 supabase.from("credit_transactions").insert({
   user_id, amount, type: "topup" | "deduction" | "bonus",
@@ -134,14 +134,14 @@ supabase.from("credit_transactions").insert({
 | `jd_match`   | 3    |
 | `ats_check`  | 3    |
 
-> Deduction is **not atomic** — read balance, check, write new balance. Two concurrent feature uses could race. Server-side enforcement would require a Postgres function or RLS-level check.
+> Deduction is **not atomic** - read balance, check, write new balance. Two concurrent feature uses could race. Server-side enforcement would require a Postgres function or RLS-level check.
 
 ---
 
 ## 5. Edge Function: `resume-ai`
 
 - **Endpoint:** `POST https://<project>.supabase.co/functions/v1/resume-ai`
-- **Auth:** `verify_jwt = false` ([supabase/config.toml](../supabase/config.toml)) — public, but supabase-js still attaches the user JWT.
+- **Auth:** `verify_jwt = false` ([supabase/config.toml](../supabase/config.toml)) - public, but supabase-js still attaches the user JWT.
 - **Source:** [supabase/functions/resume-ai/index.ts](../supabase/functions/resume-ai/index.ts)
 - **Invoked via:** `supabase.functions.invoke("resume-ai", { body: {...} })`
 
@@ -153,7 +153,7 @@ Extract structured `ResumeData` from raw resume text (uploaded `.docx`/`.pdf`, p
 - **Body:** `{ action: "parse-resume", rawText: string }`
 - **Caller:** [ResumeImport.tsx:85](../src/components/resume/ResumeImport.tsx#L85)
 - **Model:** `google/gemini-3-flash-preview` (forced tool call: `parsed_resume`)
-- **Returns:** `ResumeData` JSON — `header`, `summary`, `experience[]`, `education[]`, `skills[]`, `projects[]`, `certifications[]`, `leadership[]`, `customSections[]`. Schema: [resume-ai/index.ts:9-110](../supabase/functions/resume-ai/index.ts#L9-L110).
+- **Returns:** `ResumeData` JSON - `header`, `summary`, `experience[]`, `education[]`, `skills[]`, `projects[]`, `certifications[]`, `leadership[]`, `customSections[]`. Schema: [resume-ai/index.ts:9-110](../supabase/functions/resume-ai/index.ts#L9-L110).
 - **Errors:** 500 if `rawText` missing.
 
 ### 5.2 `action: "tailor-resume"`
@@ -170,7 +170,7 @@ Score the resume on ATS compatibility.
 - **Body:** `{ action: "ats-score", resumeData: ResumeData }`
 - **Caller:** [useResumeAI.ts:49](../src/hooks/useResumeAI.ts#L49) (`analyzeATS`)
 - **Model:** `google/gemini-3-flash-preview` (forced tool call: `ats_analysis`)
-- **Returns:** `ATSResult` — `{ overallScore, categories: [{ name, score, feedback, suggestions[] }], topStrengths[], criticalIssues[], quickWins[] }`. Defined in [useResumeAI.ts:6-12](../src/hooks/useResumeAI.ts#L6-L12).
+- **Returns:** `ATSResult` - `{ overallScore, categories: [{ name, score, feedback, suggestions[] }], topStrengths[], criticalIssues[], quickWins[] }`. Defined in [useResumeAI.ts:6-12](../src/hooks/useResumeAI.ts#L6-L12).
 - **Credits:** 3 (`ats_check`).
 
 ### 5.4 `action: "jd-match"`
@@ -179,7 +179,7 @@ Compare resume vs JD.
 - **Body:** `{ action: "jd-match", resumeData: ResumeData, jobDescription: string }`
 - **Caller:** [useResumeAI.ts:64](../src/hooks/useResumeAI.ts#L64) (`matchJD`)
 - **Model:** `google/gemini-3-flash-preview` (forced tool call: `jd_match_analysis`)
-- **Returns:** `JDMatchResult` — `{ matchScore, matchedKeywords[], missingKeywords[], experienceMatch, skillsGap[], recommendations[], sectionFeedback: [{ section, score, feedback }] }`. Defined in [useResumeAI.ts:14-22](../src/hooks/useResumeAI.ts#L14-L22).
+- **Returns:** `JDMatchResult` - `{ matchScore, matchedKeywords[], missingKeywords[], experienceMatch, skillsGap[], recommendations[], sectionFeedback: [{ section, score, feedback }] }`. Defined in [useResumeAI.ts:14-22](../src/hooks/useResumeAI.ts#L14-L22).
 - **Credits:** 3 (`jd_match`).
 
 ### 5.5 `action: "fetch-jd"`
@@ -200,10 +200,10 @@ Conversational resume coach. Returns text + tool calls the client applies to mut
 - **Model:** `google/gemini-2.5-flash`, with `chatTools`, no forced tool choice
 - **Returns:** `{ content: string, tool_calls: { id, name, arguments }[] }`
 - **Tools the AI can call** ([resume-ai/index.ts:113-220](../supabase/functions/resume-ai/index.ts#L113-L220)):
-  - `update_section({ field, value, change_type: "grammar" | "content" | "keyword" | "formatting" })` — dot-path field update (e.g. `experience[0].bullets`).
+  - `update_section({ field, value, change_type: "grammar" | "content" | "keyword" | "formatting" })` - dot-path field update (e.g. `experience[0].bullets`).
   - `reorder_sections({ section_order: string[] })`
   - `toggle_section({ section_id, visible })`
-  - `add_item({ section, item })` — `section` ∈ `experience` / `education` / `skills` / `projects` / `certifications` / `leadership`.
+  - `add_item({ section, item })` - `section` ∈ `experience` / `education` / `skills` / `projects` / `certifications` / `leadership`.
   - `remove_item({ section, index })`
 - The client executes each tool call by calling local handlers wired in [useResumeAI.ts:131-176](../src/hooks/useResumeAI.ts#L131-L176).
 - **Credits:** 2 (`ai_chat`).
@@ -225,7 +225,7 @@ Conversational resume coach. Returns text + tool calls the client applies to mut
 - **Caller:** [LinkedInReviewer.tsx:173](../src/pages/LinkedInReviewer.tsx#L173)
 - **Body:** `{ linkedinUrl?: string, profileText: string /* >=50 chars */ }`
 - **Model:** `google/gemini-3-flash-preview` (forced tool call: `linkedin_review`)
-- **Returns:** `{ overallScore, projectedOverallScore, summary, profileName, profileHeadline, sections: [{ name, score, projectedScore, issues[], suggestions[] }], topStrengths[], criticalImprovements[] }` — schema in [linkedin-review/index.ts:62-90](../supabase/functions/linkedin-review/index.ts#L62-L90).
+- **Returns:** `{ overallScore, projectedOverallScore, summary, profileName, profileHeadline, sections: [{ name, score, projectedScore, issues[], suggestions[] }], topStrengths[], criticalImprovements[] }` - schema in [linkedin-review/index.ts:62-90](../supabase/functions/linkedin-review/index.ts#L62-L90).
 - **Errors:**
 
 | Status | Cause                                            |
@@ -234,7 +234,7 @@ Conversational resume coach. Returns text + tool calls the client applies to mut
 | 429    | Gemini quota / rate limit                        |
 | 500    | Parse failure or missing `GEMINI_API_KEY`        |
 
-> Not gated on credits client-side — free per request today.
+> Not gated on credits client-side - free per request today.
 
 ---
 
@@ -245,9 +245,9 @@ Conversational resume coach. Returns text + tool calls the client applies to mut
 - **Auth:** `x-goog-api-key: ${GEMINI_API_KEY}` (function env var, never sent to browser).
 - **Shape:** OpenAI-compatible `chat/completions` with `tools` + `tool_choice`.
 - **Models used:**
-  - `google/gemini-3-flash-preview` — parse, tailor, ats, jd, linkedin
-  - `google/gemini-2.5-flash` — chat
-  - `google/gemini-2.5-flash-lite` — URL → JD extraction
+  - `google/gemini-3-flash-preview` - parse, tailor, ats, jd, linkedin
+  - `google/gemini-2.5-flash` - chat
+  - `google/gemini-2.5-flash-lite` - URL → JD extraction
 - The function maps upstream `429` → `429`, `402` → `402` to the client.
 
 ---
@@ -256,9 +256,9 @@ Conversational resume coach. Returns text + tool calls the client applies to mut
 
 | User feature                  | Frontend caller                                                                                                      | Edge Fn / DB                                              | Cost           |
 |-------------------------------|----------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------|----------------|
-| Sign in (magic link)          | [Auth.tsx:39](../src/pages/Auth.tsx#L39)                                                                             | `supabase.auth.signInWithOtp`                             | —              |
-| Sign in (Google)              | [Auth.tsx:25](../src/pages/Auth.tsx#L25)                                                                             | `supabase.auth.signInWithOAuth({ provider: "google" })`   | —              |
-| Show credit balance + history | [useCredits.ts](../src/hooks/useCredits.ts)                                                                          | `user_credits` SELECT, `credit_transactions` SELECT       | —              |
+| Sign in (magic link)          | [Auth.tsx:39](../src/pages/Auth.tsx#L39)                                                                             | `supabase.auth.signInWithOtp`                             | -              |
+| Sign in (Google)              | [Auth.tsx:25](../src/pages/Auth.tsx#L25)                                                                             | `supabase.auth.signInWithOAuth({ provider: "google" })`   | -              |
+| Show credit balance + history | [useCredits.ts](../src/hooks/useCredits.ts)                                                                          | `user_credits` SELECT, `credit_transactions` SELECT       | -              |
 | Import resume from .docx/.pdf | [ResumeImport.tsx:85](../src/components/resume/ResumeImport.tsx#L85)                                                 | `resume-ai` action `parse-resume`                         | free           |
 | Fetch JD from a URL           | [JDMatchPanel.tsx:48](../src/components/resume/JDMatchPanel.tsx#L48)                                                 | `resume-ai` action `fetch-jd`                             | free           |
 | Match resume vs JD            | [useResumeAI.ts:64](../src/hooks/useResumeAI.ts#L64)                                                                 | `resume-ai` action `jd-match` + 2 ledger writes           | 3 credits      |
@@ -271,7 +271,7 @@ Conversational resume coach. Returns text + tool calls the client applies to mut
 
 ## 9. Notes & Caveats
 
-- **`verify_jwt = false`** on both edge functions — anyone with the URL can call them and burn `GEMINI_API_KEY` budget. There is no server-side credit check; deduction is purely client-side in `useCredits.ts`. A determined user can bypass by calling the function directly. To gate, flip `verify_jwt = true` and check `auth.uid()` + decrement credits inside the function.
-- **`tailorResume` is not wired to `deductCredits`** — the other AI features deduct, this one doesn't (no `tailor` value in the `feature` CHECK constraint either; would need a migration to add it).
-- **Credit deduction is non-atomic** ([useCredits.ts:65-95](../src/hooks/useCredits.ts#L65-L95)) — read-then-write. Consider a Postgres `RPC` like `deduct_credits(feature, cost)` doing the check + update + ledger insert in one transaction.
-- **`fetch-jd`** does a server-side fetch of arbitrary user-supplied URLs — minor SSRF surface (could probe internal addresses if Supabase's edge runtime allows it). Worth blocklisting RFC1918 / metadata IPs if this matters.
+- **`verify_jwt = false`** on both edge functions - anyone with the URL can call them and burn `GEMINI_API_KEY` budget. There is no server-side credit check; deduction is purely client-side in `useCredits.ts`. A determined user can bypass by calling the function directly. To gate, flip `verify_jwt = true` and check `auth.uid()` + decrement credits inside the function.
+- **`tailorResume` is not wired to `deductCredits`** - the other AI features deduct, this one doesn't (no `tailor` value in the `feature` CHECK constraint either; would need a migration to add it).
+- **Credit deduction is non-atomic** ([useCredits.ts:65-95](../src/hooks/useCredits.ts#L65-L95)) - read-then-write. Consider a Postgres `RPC` like `deduct_credits(feature, cost)` doing the check + update + ledger insert in one transaction.
+- **`fetch-jd`** does a server-side fetch of arbitrary user-supplied URLs - minor SSRF surface (could probe internal addresses if Supabase's edge runtime allows it). Worth blocklisting RFC1918 / metadata IPs if this matters.

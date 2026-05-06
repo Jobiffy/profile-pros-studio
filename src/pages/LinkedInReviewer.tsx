@@ -229,7 +229,7 @@ const LinkedInReviewer = () => {
                 Jobiffy LinkedIn Profile Reviewer
               </h2>
               <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                Just paste your LinkedIn URL — our AI automatically fetches and analyzes every section of your profile with detailed scores and actionable improvements.
+                Just paste your LinkedIn URL - our AI automatically fetches and analyzes every section of your profile with detailed scores and actionable improvements.
               </p>
 
               {/* USP pills */}

@@ -40,7 +40,7 @@ const Landing = () => {
     {
       icon: Briefcase,
       title: "JD Matcher",
-      description: "Match your resume against any job description — see exactly which keywords and skills you're missing.",
+      description: "Match your resume against any job description - see exactly which keywords and skills you're missing.",
       gradient: "from-green-500/20 to-emerald-500/20",
     },
     {
@@ -66,7 +66,7 @@ const Landing = () => {
 
   const steps = [
     { step: "01", title: "Pick a Template", description: "Choose from 15+ ATS-optimized, professionally designed templates", color: "bg-primary" },
-    { step: "02", title: "Add Your Story", description: "Import from LinkedIn or type — AI assists every section", color: "bg-accent" },
+    { step: "02", title: "Add Your Story", description: "Import from LinkedIn or type - AI assists every section", color: "bg-accent" },
     { step: "03", title: "Optimize & Score", description: "Run ATS checker, JD matcher, and AI coach to perfect your resume", color: "bg-primary" },
     { step: "04", title: "Download & Win", description: "Export as PDF or DOCX and start landing interviews", color: "bg-accent" },
   ];
@@ -213,7 +213,7 @@ const Landing = () => {
               onClick={() => navigate("/auth")}
               className="group h-14 px-8 text-base rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-xl shadow-primary/25 hover:shadow-2xl hover:shadow-primary/35 transition-all duration-300 hover:-translate-y-0.5"
             >
-              Start Building — It's Free
+              Start Building - It's Free
               <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
             </Button>
             <Button
