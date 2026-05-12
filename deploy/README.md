@@ -8,6 +8,7 @@ instance. nginx serves it at `https://ai.jobiffy.co/ai-resume-builder/`.
 | File | Purpose |
 |---|---|
 | `nginx.conf` | Server block for `ai.jobiffy.co` - copy to `/etc/nginx/sites-available/`. |
+| `mjs-mime.conf` | http-level MIME drop-in adding `.mjs` -> `text/javascript` - copy to `/etc/nginx/conf.d/`. Required for the pdf.js worker (and any future ESM-module worker) to load. |
 | `ec2-bootstrap.sh` | One-time setup for a fresh Ubuntu EC2: installs nginx, creates `deploy` user, opens UFW. |
 | `README.md` | This file. |
 
@@ -44,6 +45,7 @@ sudo cp deploy/nginx.conf /etc/nginx/sites-available/ai.jobiffy.co
 sudo ln -sf /etc/nginx/sites-available/ai.jobiffy.co \
             /etc/nginx/sites-enabled/ai.jobiffy.co
 sudo rm -f /etc/nginx/sites-enabled/default
+sudo cp deploy/mjs-mime.conf /etc/nginx/conf.d/mjs-mime.conf
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
